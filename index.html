@@ -33,9 +33,6 @@
             user-select: none;
             background-color: #FEF3C7; /* Amarillo pastel */
             border: 2px solid #FBBF24; /* Borde amarillo */
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
         .draggable-card:active {
             cursor: grabbing;
@@ -55,27 +52,15 @@
             25% { transform: translateX(-5px); }
             75% { transform: translateX(5px); }
         }
-        .modal {
+        #win-modal {
             background-color: rgba(0,0,0,0.5);
         }
-        .modal-content {
+        #win-modal-content {
             animation: bounce-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         @keyframes bounce-in {
             0% { transform: scale(0.5); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
-        }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -121,8 +106,8 @@
     </div>
 
     <!-- Modal de Victoria -->
-    <div id="win-modal" class="modal fixed inset-0 flex items-center justify-center hidden">
-        <div class="modal-content bg-white p-8 rounded-2xl shadow-2xl text-center max-w-sm mx-auto transform">
+    <div id="win-modal" class="fixed inset-0 flex items-center justify-center hidden">
+        <div id="win-modal-content" class="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-sm mx-auto transform">
             <h2 class="text-4xl font-bold text-yellow-500 mb-4">¡FELICITACIONES!</h2>
             <p class="text-lg text-gray-700 mb-6">¡Has completado el mapa de las Áreas Protegidas del Perú! Eres un verdadero explorador.</p>
             <button id="play-again-button" class="px-6 py-3 bg-green-500 text-white font-bold rounded-full shadow-lg hover:bg-green-600 transition transform hover:scale-105 focus:outline-none">
@@ -130,23 +115,11 @@
             </button>
         </div>
     </div>
-    
-    <!-- Modal de Dato Curioso con Gemini -->
-    <div id="fact-modal" class="modal fixed inset-0 flex items-center justify-center hidden">
-        <div id="fact-modal-content" class="modal-content bg-white p-8 rounded-2xl shadow-2xl text-center max-w-md mx-auto transform relative">
-             <button id="close-fact-modal" class="absolute top-2 right-4 text-gray-500 hover:text-gray-800 text-3xl font-bold">&times;</button>
-            <h2 id="fact-modal-title" class="text-3xl font-bold text-cyan-600 mb-4">Dato Curioso</h2>
-            <div id="fact-modal-body" class="text-lg text-gray-700 mb-6 min-h-[100px] flex items-center justify-center">
-                 <div class="loader hidden"></div>
-                 <p id="fact-text"></p>
-            </div>
-        </div>
-    </div>
-
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // --- DATOS DEL JUEGO ---
+            // Aquí almacenamos todas las áreas protegidas y su categoría.
             const protectedAreas = [
                 { name: 'Güeppi-Sekime', category: 'Parques Nacionales' },
                 { name: 'Río Abiseo', category: 'Parques Nacionales' },
@@ -178,11 +151,6 @@
             const cardsContainer = document.getElementById('cards-container');
             const droppableZones = document.querySelectorAll('.droppable-zone');
             const winModal = document.getElementById('win-modal');
-            const factModal = document.getElementById('fact-modal');
-            const factModalTitle = document.getElementById('fact-modal-title');
-            const factText = document.getElementById('fact-text');
-            const loader = factModal.querySelector('.loader');
-
             let correctPlacements = 0;
             let totalCards = protectedAreas.length;
 
@@ -192,8 +160,8 @@
                 cardsContainer.innerHTML = '';
                 droppableZones.forEach(zone => zone.innerHTML = '');
                 winModal.classList.add('hidden');
-                factModal.classList.add('hidden');
 
+                // Barajar y crear las tarjetas
                 const shuffledAreas = [...protectedAreas].sort(() => Math.random() - 0.5);
                 
                 shuffledAreas.forEach((area, index) => {
@@ -201,20 +169,19 @@
                     card.id = `card-${index}`;
                     card.className = 'draggable-card p-2 rounded-lg font-semibold text-gray-800 shadow-md';
                     card.draggable = true;
-                    
-                    const cardName = document.createElement('span');
-                    cardName.textContent = area.name;
-                    card.appendChild(cardName);
-
+                    card.textContent = area.name;
                     card.dataset.category = area.category;
                     cardsContainer.appendChild(card);
 
+                    // Añadir eventos de arrastre a cada tarjeta
                     card.addEventListener('dragstart', handleDragStart);
                     card.addEventListener('dragend', handleDragEnd);
                 });
             }
 
             // --- LÓGICA DE ARRASTRAR Y SOLTAR (DRAG & DROP) ---
+
+            // Se activa cuando empiezas a arrastrar una tarjeta
             function handleDragStart(e) {
                 e.dataTransfer.setData('text/plain', e.target.id);
                 e.dataTransfer.effectAllowed = 'move';
@@ -223,17 +190,28 @@
                 }, 0);
             }
 
+            // Se activa cuando sueltas la tarjeta
             function handleDragEnd(e) {
                 e.target.classList.remove('opacity-50');
             }
 
-            droppableZones.forEach(zone => {
-                zone.addEventListener('dragenter', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
-                zone.addEventListener('dragover', (e) => { e.preventDefault(); });
-                zone.addEventListener('dragleave', () => { zone.classList.remove('drag-over'); });
-                zone.addEventListener('drop', handleDrop);
-            });
+            // Se activa cuando una tarjeta entra en una zona de soltar
+            function handleDragEnter(e) {
+                e.preventDefault();
+                this.classList.add('drag-over');
+            }
 
+            // Se activa cuando una tarjeta está sobre una zona de soltar
+            function handleDragOver(e) {
+                e.preventDefault(); // Necesario para permitir el drop
+            }
+
+            // Se activa cuando una tarjeta sale de una zona de soltar
+            function handleDragLeave(e) {
+                this.classList.remove('drag-over');
+            }
+
+            // Se activa cuando sueltas la tarjeta en una zona
             function handleDrop(e) {
                 e.preventDefault();
                 this.classList.remove('drag-over');
@@ -243,74 +221,26 @@
                 const dropZoneCategory = this.parentElement.dataset.category;
                 const cardCategory = draggedCard.dataset.category;
 
+                // Comprobar si la categoría es correcta
                 if (dropZoneCategory === cardCategory) {
+                    // ¡Correcto!
                     draggedCard.classList.add('correct');
-                    draggedCard.draggable = false;
+                    draggedCard.draggable = false; // No se puede mover más
                     this.appendChild(draggedCard);
                     correctPlacements++;
-                    addLearnMoreButton(draggedCard);
                     checkWinCondition();
                 } else {
+                    // ¡Incorrecto!
                     draggedCard.classList.add('incorrect-drop');
                     setTimeout(() => {
                         draggedCard.classList.remove('incorrect-drop');
-                    }, 500);
+                    }, 500); // Duración de la animación de sacudida
                 }
             }
 
-            // --- LÓGICA DEL JUEGO Y GEMINI ---
-            function addLearnMoreButton(card) {
-                const areaName = card.querySelector('span').textContent;
-                const button = document.createElement('button');
-                button.innerHTML = '✨';
-                button.className = 'ml-2 text-2xl hover:scale-125 transition-transform';
-                button.title = `Aprender más sobre ${areaName}`;
-                button.onclick = () => getFunFact(areaName);
-                card.appendChild(button);
-            }
+            // --- LÓGICA DEL JUEGO ---
 
-            async function getFunFact(areaName) {
-                factModalTitle.textContent = `Dato Curioso de ${areaName}`;
-                factText.textContent = '';
-                loader.classList.remove('hidden');
-                factModal.classList.remove('hidden');
-
-                // --- PROMPT MODIFICADO ---
-                const prompt = `Actúa como un guía de naturaleza amigable para niños. Dame un dato curioso sobre "${areaName}" en Perú. Primero, dime en qué departamento o región se encuentra. Segundo, menciona un animal o planta importante que se protege allí. Tercero, añade un hecho sorprendente sobre ese lugar o especie. Hazlo todo en dos o tres frases cortas.`;
-                const apiKey = ""; // Se deja vacío para que el entorno lo gestione
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-                
-                try {
-                    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error(`Error de red: ${response.statusText}`);
-                    }
-
-                    const result = await response.json();
-                    
-                    if (result.candidates && result.candidates.length > 0 &&
-                        result.candidates[0].content && result.candidates[0].content.parts &&
-                        result.candidates[0].content.parts.length > 0) {
-                        const text = result.candidates[0].content.parts[0].text;
-                        factText.textContent = text;
-                    } else {
-                        throw new Error("No se recibió contenido válido de la API.");
-                    }
-
-                } catch (error) {
-                    console.error("Error al llamar a la API de Gemini:", error);
-                    factText.textContent = "¡Uy! No pudimos encontrar un dato curioso en este momento. ¡Inténtalo de nuevo más tarde!";
-                } finally {
-                    loader.classList.add('hidden');
-                }
-            }
-            
+            // Comprobar si el jugador ha ganado
             function checkWinCondition() {
                 if (correctPlacements === totalCards) {
                     setTimeout(() => {
@@ -318,20 +248,22 @@
                     }, 500);
                 }
             }
-            
+
+            // Reiniciar el juego
             function resetGame() {
                 initializeGame();
             }
 
             // --- ASIGNACIÓN DE EVENTOS ---
+            droppableZones.forEach(zone => {
+                zone.addEventListener('dragenter', handleDragEnter);
+                zone.addEventListener('dragover', handleDragOver);
+                zone.addEventListener('dragleave', handleDragLeave);
+                zone.addEventListener('drop', handleDrop);
+            });
+            
             document.getElementById('reset-button').addEventListener('click', resetGame);
             document.getElementById('play-again-button').addEventListener('click', resetGame);
-            document.getElementById('close-fact-modal').addEventListener('click', () => factModal.classList.add('hidden'));
-            factModal.addEventListener('click', (e) => {
-                if (e.target.id === 'fact-modal') {
-                    factModal.classList.add('hidden');
-                }
-            });
 
             // --- Iniciar el juego por primera vez ---
             initializeGame();
