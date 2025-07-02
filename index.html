@@ -80,21 +80,14 @@
     </style>
 </head>
 <body class="p-4 md:p-8">
-beta 1
+
     <div class="max-w-7xl mx-auto text-center">
         <h1 class="text-4xl md:text-5xl text-blue-600 mb-2">¡Aventura por el Perú!</h1>
         <p class="text-lg text-gray-700 mb-6">Arrastra cada área protegida a su grupo correcto. ¡Tú puedes!</p>
-        <p class="text-lg text-gray-700 mb-6">*Manten presionado por 2 seg para arrastrar.</p>
 
-        <p class="text-lg text-gray-700 mb-6">presiona ✨ para descubrir un dato curioso.</p>
-
-
-        <!-- Contenedor de las tarjetas para arrastrar -->
         <div id="cards-container" class="mb-8 p-4 bg-blue-100 rounded-xl shadow-md flex flex-wrap justify-center items-center gap-3">
-            <!-- Las tarjetas se insertarán aquí con JavaScript -->
-        </div>
+            </div>
 
-        <!-- Contenedores para soltar las tarjetas -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div class="category-container" data-category="Parques Nacionales">
                 <h2 class="text-2xl text-white bg-green-500 p-3 rounded-t-lg">Parques Nacionales</h2>
@@ -124,7 +117,6 @@ beta 1
         </div>
     </div>
 
-    <!-- Modal de Victoria -->
     <div id="win-modal" class="modal fixed inset-0 flex items-center justify-center hidden">
         <div class="modal-content bg-white p-8 rounded-2xl shadow-2xl text-center max-w-sm mx-auto transform">
             <h2 class="text-4xl font-bold text-yellow-500 mb-4">¡FELICITACIONES!</h2>
@@ -135,7 +127,6 @@ beta 1
         </div>
     </div>
     
-    <!-- Modal de Dato Curioso con Gemini -->
     <div id="fact-modal" class="modal fixed inset-0 flex items-center justify-center hidden">
         <div id="fact-modal-content" class="modal-content bg-white p-8 rounded-2xl shadow-2xl text-center max-w-md mx-auto transform relative">
              <button id="close-fact-modal" class="absolute top-2 right-4 text-gray-500 hover:text-gray-800 text-3xl font-bold">&times;</button>
@@ -189,6 +180,10 @@ beta 1
 
             let correctPlacements = 0;
             let totalCards = protectedAreas.length;
+            // Almacenará el estado de las tarjetas movidas
+            let droppedCardsState = {}; 
+            // Almacenará el orden inicial (o persistido) de las tarjetas
+            let shuffledAreaNames = []; 
 
             // --- INICIALIZACIÓN DEL JUEGO ---
             function initializeGame() {
@@ -198,24 +193,99 @@ beta 1
                 winModal.classList.add('hidden');
                 factModal.classList.add('hidden');
 
-                const shuffledAreas = [...protectedAreas].sort(() => Math.random() - 0.5);
+                // Cargar estado guardado o inicializar uno nuevo
+                loadGameState();
+
+                let areasToDisplay;
+                if (shuffledAreaNames.length === 0) { // Si no hay un orden guardado, barajar y guardar
+                    areasToDisplay = [...protectedAreas].sort(() => Math.random() - 0.5);
+                    shuffledAreaNames = areasToDisplay.map(area => area.name);
+                    saveInitialOrder(); // Guardar el nuevo orden barajado
+                } else { // Si hay un orden guardado, usar ese orden
+                    areasToDisplay = shuffledAreaNames.map(name => 
+                        protectedAreas.find(area => area.name === name)
+                    );
+                }
                 
-                shuffledAreas.forEach((area, index) => {
-                    const card = document.createElement('div');
-                    card.id = `card-${index}`;
-                    card.className = 'draggable-card p-2 rounded-lg font-semibold text-gray-800 shadow-md';
-                    card.draggable = true;
-                    
-                    const cardName = document.createElement('span');
-                    cardName.textContent = area.name;
-                    card.appendChild(cardName);
+                areasToDisplay.forEach((area, index) => {
+                    const cardId = `card-${index}`;
+                    if (droppedCardsState[cardId]) {
+                        // La tarjeta ya fue arrastrada, la colocamos en su destino
+                        const targetZone = document.querySelector(`.category-container[data-category="${droppedCardsState[cardId]}"] .droppable-zone`);
+                        createCard(area, cardId, targetZone, true); // true para indicar que ya está correcta
+                        // Solo incrementamos correctPlacements aquí si es la primera vez que se carga en esta sesión como "correcta"
+                        // para evitar doble conteo si el juego ya estaba completo.
+                        // El conteo real se maneja en loadGameState para el inicio.
+                    } else {
+                        // La tarjeta no ha sido arrastrada, la mantenemos en el contenedor inicial
+                        createCard(area, cardId, cardsContainer);
+                    }
+                });
+                
+                // Recalcular correctPlacements al cargar, basándose en droppedCardsState
+                correctPlacements = Object.keys(droppedCardsState).length;
+                checkWinCondition(); // Verificar si ya ganó al cargar la página
+            }
 
-                    card.dataset.category = area.category;
-                    cardsContainer.appendChild(card);
+            function createCard(area, cardId, parentContainer, isCorrect = false) {
+                const card = document.createElement('div');
+                card.id = cardId;
+                card.className = 'draggable-card p-2 rounded-lg font-semibold text-gray-800 shadow-md';
+                card.draggable = !isCorrect; // Solo se puede arrastrar si no es correcta
+                
+                const cardName = document.createElement('span');
+                cardName.textContent = area.name;
+                card.appendChild(cardName);
 
+                card.dataset.category = area.category;
+
+                if (isCorrect) {
+                    card.classList.add('correct');
+                    addLearnMoreButton(card);
+                }
+
+                parentContainer.appendChild(card);
+
+                if (!isCorrect) {
                     card.addEventListener('dragstart', handleDragStart);
                     card.addEventListener('dragend', handleDragEnd);
-                });
+                }
+            }
+
+
+            // --- PERSISTENCIA DEL ESTADO ---
+            function saveGameState() {
+                localStorage.setItem('gameDroppedCards', JSON.stringify(droppedCardsState));
+                // correctPlacements se calcula al cargar, no es necesario guardarlo directamente aquí
+            }
+
+            function saveInitialOrder() {
+                localStorage.setItem('gameShuffledOrder', JSON.stringify(shuffledAreaNames));
+            }
+
+            function loadGameState() {
+                const savedDroppedCards = localStorage.getItem('gameDroppedCards');
+                const savedShuffledOrder = localStorage.getItem('gameShuffledOrder');
+                
+                if (savedDroppedCards) {
+                    droppedCardsState = JSON.parse(savedDroppedCards);
+                } else {
+                    droppedCardsState = {};
+                }
+
+                if (savedShuffledOrder) {
+                    shuffledAreaNames = JSON.parse(savedShuffledOrder);
+                } else {
+                    shuffledAreaNames = [];
+                }
+            }
+
+            function clearGameState() {
+                localStorage.removeItem('gameDroppedCards');
+                localStorage.removeItem('gameShuffledOrder'); // Limpiar también el orden guardado
+                droppedCardsState = {};
+                shuffledAreaNames = []; // Restablecer el orden
+                correctPlacements = 0;
             }
 
             // --- LÓGICA DE ARRASTRAR Y SOLTAR (DRAG & DROP) ---
@@ -251,8 +321,15 @@ beta 1
                     draggedCard.classList.add('correct');
                     draggedCard.draggable = false;
                     this.appendChild(draggedCard);
-                    correctPlacements++;
                     addLearnMoreButton(draggedCard);
+                    
+                    // Actualizar el estado de las tarjetas movidas y guardar
+                    if (!droppedCardsState[cardId]) { // Solo incrementa si es la primera vez que se suelta correctamente
+                        correctPlacements++;
+                    }
+                    droppedCardsState[cardId] = dropZoneCategory; // Guardar dónde fue soltada
+                    saveGameState();
+                    
                     checkWinCondition();
                 } else {
                     draggedCard.classList.add('incorrect-drop');
@@ -264,10 +341,14 @@ beta 1
 
             // --- LÓGICA DEL JUEGO Y GEMINI ---
             function addLearnMoreButton(card) {
+                // Evitar añadir el botón si ya existe
+                if (card.querySelector('.learn-more-button')) {
+                    return;
+                }
                 const areaName = card.querySelector('span').textContent;
                 const button = document.createElement('button');
                 button.innerHTML = '✨';
-                button.className = 'ml-2 text-2xl hover:scale-125 transition-transform';
+                button.className = 'learn-more-button ml-2 text-2xl hover:scale-125 transition-transform';
                 button.title = `Aprender más sobre ${areaName}`;
                 button.onclick = () => getFunFact(areaName);
                 card.appendChild(button);
@@ -281,7 +362,10 @@ beta 1
 
                 // --- PROMPT MODIFICADO ---
                 const prompt = `Actúa como un guía de naturaleza amigable. Dame un dato curioso sobre "${areaName}" en Perú. Primero, dime en qué departamento o región se encuentra. Segundo, menciona un animal o planta importante que se protege allí. Tercero, añade un hecho sorprendente sobre ese lugar o especie. Hazlo todo en dos o tres frases cortas.`;
-                const apiKey = "AIzaSyDJnxdmaG66UQjjMa4bB_ZoV6etCeQse8s"; // Se deja vacío para que el entorno lo gestione
+                // ¡IMPORTANTE! Para que esto funcione, DEBES usar tu propia API Key.
+                // Reemplaza "AIzaSyDJnxdmaG66UQjjMa4bB_ZoV6etCeQse8s" con tu clave real de la API de Gemini.
+                // Es recomendable gestionar las claves de API de forma segura, no directamente en el cliente en producción.
+                const apiKey = "AIzaSyDJnxdmaG66UQjjMa4bB_ZoV6etCeQse8s"; 
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
                 
                 try {
@@ -324,7 +408,8 @@ beta 1
             }
             
             function resetGame() {
-                initializeGame();
+                clearGameState(); // Limpiar el estado guardado
+                initializeGame(); // Reiniciar el juego
             }
 
             // --- ASIGNACIÓN DE EVENTOS ---
