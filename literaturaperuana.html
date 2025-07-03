@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viaje Interactivo por la Literatura Peruana</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+        }
+        .card-bg {
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+        }
+        .modal-bg {
+             background-color: rgba(0, 0, 0, 0.6);
+        }
+        .active-tab {
+            background-color: #ff9800;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .tab:hover {
+            background-color: #fbbf24;
+        }
+        .btn-primary {
+            background-color: #ff9800;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #f57c00;
+        }
+        .btn-secondary {
+            background-color: #42a5f5;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .btn-secondary:hover {
+            background-color: #1e88e5;
+        }
+        .btn-level {
+            transition: all 0.3s;
+        }
+        .btn-level:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .prose-custom p {
+            margin-bottom: 0.5rem;
+        }
+        .prose-custom h3 {
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+         .prose-custom ul {
+            list-style-position: inside;
+            padding-left: 1rem;
+        }
+        /* Estilos para los juegos */
+        .game-option-button {
+            background-color: #f3f4f6;
+            border: 1px solid #d1d5db;
+            color: #1f2937;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: left;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .game-option-button:hover {
+            background-color: #e5e7eb;
+        }
+        .game-option-button.correct {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+            font-weight: bold;
+        }
+        .game-option-button.incorrect {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+            font-weight: bold;
+        }
+        /* Estilos específicos para Rompecabezas Literario */
+        .puzzle-piece-button {
+            background-color: #e0f7fa; /* Light cyan */
+            border: 1px solid #80deea; /* Darker cyan */
+            color: #006064; /* Dark teal */
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+            font-weight: 500;
+        }
+        .puzzle-piece-button:hover {
+            background-color: #b2ebf2; /* Medium cyan */
+            transform: translateY(-2px);
+        }
+        .puzzle-piece-button.selected {
+            border-width: 2px;
+            border-color: #00bcd4; /* Cyan */
+            box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.3);
+            background-color: #80deea; /* Selected background */
+            color: white;
+        }
+        .puzzle-piece-button.correct-feedback {
+            background-color: #a5d6a7; /* Light green */
+            border-color: #4caf50; /* Green */
+            color: white;
+        }
+        .puzzle-piece-button.incorrect-feedback {
+            background-color: #ef9a9a; /* Light red */
+            border-color: #f44336; /* Red */
+            color: white;
+        }
+        #puzzle-clue {
+            background-color: #fff3e0; /* Light orange background */
+            border: 1px solid #ffcc80; /* Orange border */
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            font-size: 1.125rem;
+            color: #e65100; /* Dark orange text */
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8 text-white">
+            <h1 class="text-4xl md:text-6xl font-bold drop-shadow-lg">📚 Viaje por la Literatura Peruana 🇵🇪</h1>
+            <p class="text-lg md:text-xl mt-2">Una aventura interactiva para descubrir a los grandes autores y sus obras.</p>
+        </header>
+
+        <!-- Navegación de Pestañas -->
+        <div id="tabs-container" class="flex flex-wrap justify-center gap-2 md:gap-4 mb-8">
+            <!-- Las pestañas se generarán aquí con JS -->
+        </div>
+
+        <!-- Contenido Principal -->
+        <main id="content-container" class="card-bg rounded-2xl shadow-xl p-6 md:p-10 min-h-[500px]">
+            <!-- El contenido se cargará aquí con JS -->
+        </main>
+    </div>
+
+    <!-- Modal para Juegos y AI -->
+    <div id="modal" class="fixed inset-0 modal-bg items-center justify-center hidden z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-auto transform transition-all duration-300 scale-95 opacity-0" id="modal-content">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="modal-title" class="text-2xl font-bold text-gray-800"></h2>
+                    <button id="close-modal" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+                </div>
+                <div id="modal-body" class="text-gray-700 min-h-[200px] overflow-y-auto pr-4" style="max-height: 65vh;">
+                    <!-- Contenido del modal (juego o AI) -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Data structure for the literary periods
+        const data = {
+            "Literatura Quechua": {
+                concepto: "Es la literatura que se desarrolló en el antiguo Imperio de los Incas, antes de la llegada de los españoles. Se transmitía de forma oral, de padres a hijos, y trataba sobre sus dioses, héroes, la vida diaria, y una rica variedad de leyendas y cantos.",
+                caracteristicas: ["Anónima", "Oral", "Agrarista", "Colectiva", "Uso de géneros como el Wawaki (canto coral), el Ayataqui (canto fúnebre), el Harawi (canto lírico, amoroso o agrícola), el Urpi (canto a la paloma, símbolo de amor) y el Aymoray (canto de siembra y cosecha)."],
+                autores: [],
+                obras: [
+                    { nombre: "Ollantay", datos: "Famoso drama en quechua, que narra una historia de amor y rebelión. Personajes: Ollantay, Cusi Coyllur, Pachacútec." },
+                    { nombre: "Leyendas Quechuas", datos: "Relatos orales como la Leyenda de Manco Cápac y Mama Ocllo (origen del Imperio Inca) y la Leyenda de los Hermanos Ayar." },
+                    { nombre: "Cantos Quechuas", datos: "Diversos tipos de cantos como el Harawi (poesía lírica, amorosa o agrícola), Urpi (canto a la paloma, de amor y ternura), Ayataqui (canto fúnebre), y Aymoray (canto agrícola)." }
+                ],
+                tieneJuego: true
+            },
+            "Conquista y Colonia": {
+                concepto: "Nace con la llegada de los españoles. Los primeros textos fueron las 'crónicas', relatos de los conquistadores sobre el nuevo mundo.",
+                caracteristicas: ["Valor histórico", "Visión española", "Mezcla de realidad y fantasía."],
+                autores: [
+                    { nombre: "Inca Garcilaso de la Vega", datos: "Apodado 'Primer mestizo biológico y espiritual de América'." },
+                    { nombre: "Guamán Poma de Ayala", datos: "Cronista indígena que dibujaba para contar sus historias." }
+                ],
+                obras: [{ nombre: "Comentarios Reales de los Incas", datos: "Publicada en 1609. Narra la historia y costumbres de los Incas." }],
+                tieneJuego: true
+            },
+            "Emancipación": {
+                concepto: "Surgió durante la lucha por la independencia. Buscaba inspirar el amor por la patria y las ideas de libertad.",
+                caracteristicas: ["Patriótica", "Propaganda política", "Estilo neoclásico."],
+                autores: [{ nombre: "Mariano Melgar", datos: "Poeta y revolucionario, famoso por sus 'Yaravíes'." }],
+                obras: [{ nombre: "Yaravíes", datos: "Poemas que mezclan la tradición española con el 'harawi' quechua." }],
+                tieneJuego: true
+            },
+            "Costumbrismo": {
+                concepto: "Retrataba las costumbres de la Lima de la época, a menudo de forma burlona y crítica.",
+                caracteristicas: ["Describe tipos y costumbres", "Tono satírico", "Uso del lenguaje popular."],
+                autores: [
+                    { nombre: "Manuel Ascencio Segura", datos: "'Padre del Teatro Nacional'." },
+                    { nombre: "Felipe Pardo y Aliaga", datos: "Representante del costumbrismo aristocrático." }
+                ],
+                obras: [{ nombre: "Ña Catita", datos: "Comedia de Segura (1856) sobre una anciana chismosa." }],
+                tieneJuego: true
+            },
+            "Romanticismo": {
+                concepto: "Dio importancia a los sentimientos, la imaginación y la libertad. Se enfocó en el amor y la nostalgia.",
+                caracteristicas: ["Predominio del sentimiento", "Subjetivismo", "Interés por lo histórico."],
+                autores: [
+                    { nombre: "Ricardo Palma", datos: "Apodado 'El Bibliotecario Mendigo', creador de las 'Tradiciones Peruanas'." },
+                    { nombre: "Carlos Augusto Salaverry", datos: "El poeta romántico más importante del Perú." }
+                ],
+                obras: [
+                    { nombre: "Tradiciones Peruanas", datos: "Relatos cortos que mezclan historia y ficción (desde 1872)." },
+                    { nombre: "¡Acuérdate de mí!", datos: "Famoso poema de Salaverry sobre el amor perdido." }
+                ],
+                tieneJuego: true
+            },
+            "Realismo y Modernismo": {
+                concepto: "El Realismo criticaba problemas sociales y políticos. El Modernismo buscaba la belleza y la musicalidad en el lenguaje.",
+                caracteristicas: ["Realismo: Crítica social, objetividad.", "Modernismo: Esteticismo, musicalidad."],
+                autores: [
+                    { nombre: "Manuel González Prada", datos: "Realista radical, crítico de la clase política." },
+                    { nombre: "José Santos Chocano", datos: "Modernista que se autodenominó 'Cantor de América'." }
+                ],
+                obras: [
+                    { nombre: "Pájinas libres", datos: "Ensayos de González Prada (1894) con su 'Discurso del Politeama'." },
+                    { nombre: "Alma América", datos: "Poemario de Chocano (1906) que incluye 'Blasón'." }
+                ],
+                tieneJuego: true
+            },
+            "Vanguardismo e Indigenismo": {
+                concepto: "El Vanguardismo rompió las reglas de la poesía tradicional. El Indigenismo se enfocó en la vida y problemas de las comunidades indígenas.",
+                caracteristicas: ["Vanguardismo: Experimentación, lenguaje nuevo.", "Indigenismo: Revalorización del indígena, denuncia social."],
+                autores: [
+                    { nombre: "César Vallejo", datos: "Uno de los más grandes poetas de la historia en lengua española." },
+                    { nombre: "José María Arguedas", datos: "Mostró la riqueza de la cultura quechua y su conflicto." },
+                    { nombre: "Ciro Alegría", datos: "Novelista que retrató la vida de las comunidades andinas." }
+                ],
+                obras: [
+                    { nombre: "Trilce", datos: "Poemario vanguardista de Vallejo (1922)." },
+                    { nombre: "Los ríos profundos", datos: "Novela de Arguedas (1958) sobre el conflicto cultural." },
+                    { nombre: "El mundo es ancho y ajeno", datos: "Novela de Alegría (1941) sobre la lucha por la tierra." }
+                ],
+                tieneJuego: true
+            },
+            "Narrativa Urbana-Realista": {
+                concepto: "Desde los años 50, se centró en la vida en la ciudad, la migración y los problemas de la vida moderna.",
+                caracteristicas: ["Escenario urbano (Lima)", "Exploración psicológica", "Temas: frustración, soledad."],
+                autores: [
+                    { nombre: "Mario Vargas Llosa", datos: "Ganador del Premio Nobel de Literatura en 2010." },
+                    { nombre: "Julio Ramón Ribeyro", datos: "Maestro del cuento, apodado 'El Flaco'." },
+                    { nombre: "Alfredo Bryce Echenique", datos: "Conocido por su estilo oral, lleno de humor y nostalgia." }
+                ],
+                obras: [
+                    { nombre: "La ciudad y los perros", datos: "Novela de Vargas Llosa (1963) que revolucionó la narrativa." },
+                    { nombre: "La palabra del mudo", datos: "Recopilación de los cuentos de Ribeyro." },
+                    { nombre: "Un mundo para Julius", datos: "Novela de Bryce (1970) que retrata la infancia de un niño rico." }
+                ],
+                tieneJuego: true
+            },
+            // --- Nueva entrada para el juego "Quién es Quién" ---
+            "Quién es Quién": {
+                type: "game",
+                title: "Quién es Quién: El Personaje Misterioso",
+                description: "¡La IA te dará una pista sobre un autor o una obra! ¿Podrás adivinar quién es?",
+            },
+            // --- Nueva entrada para el juego "Rompecabezas Literario" ---
+            "Rompecabezas Literario": {
+                type: "game",
+                title: "Rompecabezas Literario: Desvela los Datos",
+                description: "¡Asocia el autor, la obra y la corriente correctos para resolver el rompecabezas!",
+            }
+            // --------------------------------------------------------
+        };
+
+        // DOM elements
+        const tabsContainer = document.getElementById('tabs-container');
+        const contentContainer = document.getElementById('content-container');
+        const modal = document.getElementById('modal');
+        const modalContent = document.getElementById('modal-content');
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
+        const closeModalBtn = document.getElementById('close-modal');
+
+        let activeTab = Object.keys(data)[0];
+        let currentWhoAmIGameData = null; // Para almacenar los datos del juego actual "Quién es Quién"
+        let currentPuzzleData = null; // Para el juego Rompecabezas Literario
+
+        // Variables para el estado del Rompecabezas Literario
+        let selectedAuthor = null;
+        let selectedWork = null;
+        let selectedCurrent = null;
+
+        // --- RENDER FUNCTIONS ---
+        function render() {
+            renderTabs();
+            renderContent();
+        }
+
+        function renderTabs() {
+            tabsContainer.innerHTML = '';
+            Object.keys(data).forEach(key => {
+                const tab = document.createElement('button');
+                tab.textContent = key;
+                tab.className = `tab px-4 py-2 rounded-full text-sm md:text-base font-semibold transition-all duration-300 ${activeTab === key ? 'active-tab' : 'bg-white/50 text-gray-800'}`;
+                tab.onclick = () => {
+                    activeTab = key;
+                    render();
+                };
+                tabsContainer.appendChild(tab);
+            });
+        }
+
+        function renderContent() {
+            // Renderiza el juego "Quién es Quién" si es la pestaña activa
+            if (activeTab === "Quién es Quién") {
+                renderWhoAmIGame();
+                return;
+            }
+            // Renderiza el juego "Rompecabezas Literario" si es la pestaña activa
+            if (activeTab === "Rompecabezas Literario") {
+                renderLiteraryPuzzleGame();
+                return;
+            }
+
+            // Lógica de renderizado existente para las otras pestañas
+            const content = data[activeTab];
+            let html = `<div class="prose-custom max-w-none">
+                <h2 class="text-3xl font-bold text-orange-600 mb-4">${activeTab}</h2>
+                <p class="text-lg text-gray-700 mb-6">${content.concepto}</p>
+                <h3 class="text-2xl font-semibold text-sky-600">Características ✨</h3>
+                <ul class="list-disc list-inside space-y-2 mb-6">${content.caracteristicas.map(c => `<li class="text-gray-600">${c}</li>`).join('')}</ul>`;
+
+            if (content.autores.length > 0) {
+                html += `<h3 class="text-2xl font-semibold text-sky-600">Autores Destacados ✒️</h3>
+                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">${content.autores.map(a => `
+                            <div class="bg-sky-50 p-4 rounded-lg border border-sky-200">
+                                <h4 class="font-bold text-sky-800">${a.nombre}</h4>
+                                <p class="text-sm text-sky-700">${a.datos}</p>
+                            </div>`).join('')}
+                         </div>`;
+            }
+
+            if (content.obras.length > 0) {
+                html += `<h3 class="text-2xl font-semibold text-sky-600">Obras Clave 📖</h3>
+                         <div class="space-y-4">${content.obras.map(o => `
+                            <div class="bg-orange-50 p-4 rounded-lg border border-orange-200 flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-bold text-orange-800">${o.nombre}</h4>
+                                    <p class="text-sm text-orange-700">${o.datos}</p>
+                                </div>
+                                <button onclick="generateWorkSummary('${o.nombre}', '${activeTab}')" class="btn-secondary text-sm py-2 px-4 rounded-full shadow-md ml-4">✨ Resumir Obra</button>
+                            </div>`).join('')}
+                         </div>`;
+            }
+            
+            html += `</div><div class="mt-8 pt-6 border-t-2 border-dashed border-gray-300 flex flex-col sm:flex-row justify-center gap-4">`;
+            if (content.tieneJuego) {
+                 html += `<button onclick="openGameModal()" class="btn-primary font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-transform">� ¡A Jugar con IA! 🎮</button>`;
+            }
+            html += `<button onclick="openAIModal()" class="btn-secondary font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-transform">🤖 Pregúntale a la IA 🤖</button>`;
+            // --- Nuevo botón para generar pieza creativa ---
+            html += `<button onclick="generateCreativePiece('${activeTab}')" class="btn-primary font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-transform">✨ Crear Pieza Inspirada</button>`;
+            // -----------------------------------------------
+            html += `</div>`;
+            contentContainer.innerHTML = html;
+        }
+
+        // --- MODAL HANDLING ---
+        function showModal() {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function hideModal() {
+            modalContent.classList.add('scale-95', 'opacity-0');
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        closeModalBtn.onclick = hideModal;
+        modal.onclick = (e) => { if (e.target === modal) hideModal(); };
+
+        // --- AI CHATBOT FUNCTIONALITY ---
+        function openAIModal() {
+            modalTitle.textContent = '🤖 Pregúntale a la IA';
+            modalBody.innerHTML = `
+                <p class="mb-4">¿Tienes alguna duda sobre <strong>${activeTab}</strong>? ¡Pregúntame lo que quieras saber!</p>
+                <textarea id="ai-prompt" class="w-full p-2 border border-gray-300 rounded-lg h-28" placeholder="Por ejemplo: ¿Podrías contarme más sobre la vida de César Vallejo?"></textarea>
+                <button id="ai-submit" onclick="getAIResponse()" class="btn-secondary w-full mt-4 py-2 rounded-lg font-semibold">Enviar Pregunta</button>
+                <div id="ai-loading" class="text-center mt-4 hidden"><p>Pensando... 🧠</p><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mt-2"></div></div>
+                <div id="ai-response" class="mt-4 p-4 bg-gray-100 rounded-lg hidden"></div>`;
+            showModal();
+        }
+        
+        async function getAIResponse() {
+            // This function handles the general Q&A with the AI
+            const promptInput = document.getElementById('ai-prompt');
+            const prompt = promptInput.value;
+            if (!prompt) return;
+
+            const submitButton = document.getElementById('ai-submit');
+            const loadingDiv = document.getElementById('ai-loading');
+            const responseDiv = document.getElementById('ai-response');
+
+            submitButton.disabled = true;
+            promptInput.disabled = true;
+            loadingDiv.classList.remove('hidden');
+            responseDiv.classList.add('hidden');
+
+            try {
+                const fullPrompt = `Como un amigable experto en literatura peruana para niños, responde la siguiente pregunta sobre "${activeTab}": ${prompt}. Mantén la respuesta concisa, educativa y fácil de entender.`;
+                const text = await callGeminiAPI(fullPrompt);
+                responseDiv.innerHTML = text.replace(/\n/g, '<br>');
+            } catch (error) {
+                console.error("Error fetching AI response:", error);
+                responseDiv.textContent = "¡Uy! Hubo un problema al conectar con la IA. Por favor, intenta más tarde.";
+            } finally {
+                loadingDiv.classList.add('hidden');
+                responseDiv.classList.remove('hidden');
+                submitButton.disabled = false;
+                promptInput.disabled = false;
+            }
+        }
+
+        // --- AI GAME FUNCTIONALITY (Multiple Choice) ---
+        function openGameModal() {
+            modalTitle.textContent = '🎲 Elige un Nivel de Desafío';
+            modalBody.innerHTML = `
+                <p class="text-center mb-6">La IA generará una pregunta única para ti. ¿Qué tan valiente eres?</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                    <button onclick="startGame('Fácil')" class="btn-level bg-green-400 hover:bg-green-500 text-white font-bold py-8 rounded-xl shadow-lg">
+                        <span class="text-4xl">🧒</span><br>Fácil
+                    </button>
+                    <button onclick="startGame('Intermedio')" class="btn-level bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-8 rounded-xl shadow-lg">
+                        <span class="text-4xl">🧑</span><br>Intermedio
+                    </button>
+                    <button onclick="startGame('Experto')" class="btn-level bg-red-500 hover:bg-red-600 text-white font-bold py-8 rounded-xl shadow-lg">
+                        <span class="text-4xl">🎓</span><br>Experto / PreU
+                    </button>
+                </div>
+            `;
+            showModal();
+        }
+
+        async function startGame(level) {
+            modalTitle.textContent = `Desafío Nivel: ${level}`;
+            modalBody.innerHTML = `<div id="ai-loading" class="text-center mt-4"><p>Generando tu desafío... 🧠</p><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mt-2"></div></div>`;
+
+            try {
+                const gameData = await generateGameWithAI(level);
+                renderQuestion(gameData, level);
+            } catch (error) {
+                console.error("Error generating game:", error);
+                modalBody.innerHTML = `<p class="text-red-500 text-center">¡Oh no! La IA no pudo crear el juego. Por favor, <button onclick="startGame('${level}')" class="font-bold underline">inténtalo de nuevo</button>.</p>`;
+            }
+        }
+
+        function renderQuestion(gameData, level) {
+            const { pregunta, opciones, respuesta_correcta } = gameData;
+            
+            let optionsHtml = opciones.map(opcion => 
+                `<button onclick="checkGameAnswer(this, '${btoa(opcion)}', '${btoa(respuesta_correcta)}')" class="w-full text-left p-3 bg-gray-100 rounded-lg hover:bg-yellow-200 transition-colors">${opcion}</button>`
+            ).join('');
+
+            modalBody.innerHTML = `
+                <div class="mb-4 text-lg prose-custom max-w-none">${pregunta.replace(/\n/g, '<br>')}</div>
+                <div id="game-options" class="space-y-3">${optionsHtml}</div>
+                <div id="game-result" class="mt-4 font-bold text-center"></div>
+                <div class="text-center mt-4"><button onclick="startGame('${level}')" class="btn-secondary px-4 py-2 rounded-lg hidden" id="play-again-btn">Jugar de Nuevo</button></div>
+            `;
+        }
+
+        function checkGameAnswer(button, selectedBase64, correctBase64) {
+            const resultDiv = document.getElementById('game-result');
+            const optionsContainer = document.getElementById('game-options');
+            const playAgainBtn = document.getElementById('play-again-btn');
+
+            // Disable all buttons
+            Array.from(optionsContainer.getElementsByTagName('button')).forEach(btn => {
+                btn.disabled = true;
+                // Highlight correct answer
+                if (btoa(btn.textContent) === correctBase64) {
+                    btn.classList.remove('bg-gray-100', 'hover:bg-yellow-200');
+                    btn.classList.add('bg-green-200', 'border-2', 'border-green-500');
+                }
+            });
+
+            if (selectedBase64 === correctBase64) {
+                resultDiv.textContent = '¡Correcto! ¡Excelente trabajo! 🎉';
+                resultDiv.className = 'mt-4 font-bold text-center text-green-600';
+                button.classList.remove('bg-gray-100', 'hover:bg-yellow-200');
+                button.classList.add('bg-green-200', 'border-2', 'border-green-500');
+            } else {
+                resultDiv.textContent = `Casi... La respuesta correcta está marcada en verde. ¡Sigue aprendiendo! 😊`;
+                resultDiv.className = 'mt-4 font-bold text-center text-red-600';
+                button.classList.remove('bg-gray-100', 'hover:bg-yellow-200');
+                button.classList.add('bg-red-200', 'border-2', 'border-red-500');
+            }
+            playAgainBtn.classList.remove('hidden');
+        }
+
+        // --- CORE AI CALLS ---
+        async function callGeminiAPI(prompt, useJson = false, schema = null) {
+            const apiKey = "AIzaSyDJnxdmaG66UQjjMa4bB_ZoV6etCeQse8s"; // Provided by the environment
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }]
+            };
+
+            if (useJson && schema) {
+                payload.generationConfig = {
+                    responseMimeType: "application/json",
+                    responseSchema: schema
+                };
+            }
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`API request failed with status ${response.status}`);
+            }
+
+            const result = await response.json();
+
+            if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
+                 return result.candidates[0].content.parts[0].text;
+            } else {
+                throw new Error("Invalid response structure from API.");
+            }
+        }
+
+        async function generateGameWithAI(level) {
+            let prompt;
+            const topic = activeTab;
+            
+            switch(level) {
+                case 'Fácil':
+                    prompt = `Genera una pregunta de opción múltiple muy fácil sobre "${topic}" en la literatura peruana. Es para un niño. Incluye 3 opciones. La respuesta debe ser obvia.`;
+                    break;
+                case 'Intermedio':
+                    prompt = `Genera una pregunta de opción múltiple de dificultad intermedia sobre "${topic}" en la literatura peruana. Es para un estudiante de secundaria. Incluye 4 opciones con un distractor creíble.`;
+                    break;
+                case 'Experto':
+                    prompt = `Actúa como un examinador para el examen de admisión de la UNMSM o UNI. Genera una pregunta compleja de literatura peruana sobre "${topic}". El estilo debe ser tipo DECO (Destrezas Cognitivas), requiriendo análisis o conocimiento preciso. Puede incluir un breve fragmento de texto si es relevante. Incluye 5 opciones, donde una es la correcta y las otras son distractores plausibles y bien elaborados. Asegúrate que la 'respuesta_correcta' coincida exactamente con una de las 'opciones'.`;
+                    break;
+            }
+            prompt += " Devuelve tu respuesta únicamente en formato JSON, siguiendo el esquema definido.";
+
+            const schema = {
+                type: "OBJECT",
+                properties: {
+                    pregunta: { type: "STRING" },
+                    opciones: { type: "ARRAY", items: { type: "STRING" } },
+                    respuesta_correcta: { type: "STRING" }
+                },
+                required: ["pregunta", "opciones", "respuesta_correcta"]
+            };
+
+            const jsonResponse = await callGeminiAPI(prompt, true, schema);
+            return JSON.parse(jsonResponse);
+        }
+
+        // --- NEW AI FEATURE: Generate Work Summary ---
+        async function generateWorkSummary(workName, periodName) {
+            modalTitle.textContent = `✨ Resumen de "${workName}"`;
+            modalBody.innerHTML = `<div id="ai-loading" class="text-center mt-4"><p>Generando resumen... 🧠</p><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mt-2"></div></div>`;
+            showModal();
+
+            try {
+                const prompt = `Genera un resumen conciso y fácil de entender de la obra "${workName}" de la corriente "${periodName}" en la literatura peruana. Enfócate en los puntos clave de la trama o su importancia. Máximo 100 palabras.`;
+                const summary = await callGeminiAPI(prompt);
+                modalBody.innerHTML = `<p>${summary.replace(/\n/g, '<br>')}</p>`;
+            } catch (error) {
+                console.error("Error generating work summary:", error);
+                modalBody.innerHTML = `<p class="text-red-500 text-center">¡Uy! No pude generar el resumen de esta obra. Por favor, intenta de nuevo más tarde.</p>`;
+            }
+        }
+
+        // --- NEW AI FEATURE: Generate Creative Piece ---
+        async function generateCreativePiece(periodName) {
+            modalTitle.textContent = `✨ Pieza Inspirada en ${periodName}`;
+            modalBody.innerHTML = `<div id="ai-loading" class="text-center mt-4"><p>La IA está creando tu pieza... ✍️</p><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mt-2"></div></div>`;
+            showModal();
+
+            try {
+                const currentPeriod = data[periodName];
+                const authorsList = currentPeriod.autores.map(a => a.nombre).join(', ') || 'autores representativos';
+                const characteristicsList = currentPeriod.caracteristicas.join(', ');
+
+                const prompt = `Escribe un poema corto o un breve fragmento de cuento (máximo 150 palabras) inspirado en la corriente literaria "${periodName}" de la literatura peruana. Incorpora elementos de sus características principales como "${characteristicsList}" y el estilo de autores como ${authorsList}. El tono debe ser acorde a la corriente.`;
+                const creativeText = await callGeminiAPI(prompt);
+                modalBody.innerHTML = `<div class="prose-custom max-w-none"><p>${creativeText.replace(/\n/g, '<br>')}</p></div>`;
+            } catch (error) {
+                console.error("Error generating creative piece:", error);
+                modalBody.innerHTML = `<p class="text-red-500 text-center">¡Lo siento! No pude crear una pieza inspirada en esta corriente. Intenta de nuevo.</p>`;
+            }
+        }
+
+        // --- GAME: Quién es Quién ---
+        async function renderWhoAmIGame() {
+            const gameInfo = data["Quién es Quién"];
+            contentContainer.innerHTML = `
+                <h2 class="text-3xl font-bold text-orange-600 mb-4">${gameInfo.title}</h2>
+                <p class="text-lg text-gray-700 mb-6">${gameInfo.description}</p>
+                <div id="who-am-i-game-area">
+                    <div id="game-clue-container" class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200 text-lg font-semibold text-blue-800 min-h-[100px] flex items-center justify-center text-center">
+                        <p id="game-clue">Pulsa "Generar Pista" para empezar.</p>
+                    </div>
+                    <div id="game-options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Las opciones se insertarán aquí -->
+                    </div>
+                    <div id="game-feedback" class="mt-6 text-center text-xl font-bold">
+                        <!-- El feedback de la respuesta se mostrará aquí -->
+                    </div>
+                    <div class="mt-8 text-center">
+                        <button id="generate-clue-btn" onclick="generateAndRenderWhoAmIClue()" class="btn-primary font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-transform">
+                            🔍 Generar Pista
+                        </button>
+                        <button id="play-again-who-am-i-btn" onclick="generateAndRenderWhoAmIClue()" class="btn-secondary font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-transform ml-4 hidden">
+                            🔄 Jugar de Nuevo
+                        </button>
+                    </div>
+                </div>
+            `;
+            currentWhoAmIGameData = null; // Limpiar datos del juego anterior al renderizar la pestaña
+        }
+
+        async function generateAndRenderWhoAmIClue() {
+            const clueContainer = document.getElementById('game-clue-container');
+            const optionsContainer = document.getElementById('game-options-container');
+            const feedbackDiv = document.getElementById('game-feedback');
+            const generateBtn = document.getElementById('generate-clue-btn');
+            const playAgainBtn = document.getElementById('play-again-who-am-i-btn');
+
+            // Mostrar carga
+            clueContainer.innerHTML = `<div class="text-center"><p>Generando pista... 🧠</p><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mt-2"></div></div>`;
+            optionsContainer.innerHTML = '';
+            feedbackDiv.textContent = '';
+            generateBtn.classList.add('hidden');
+            playAgainBtn.classList.add('hidden');
+
+            try {
+                // Esquema para la respuesta de la IA
+                const schema = {
+                    type: "OBJECT",
+                    properties: {
+                        clue: { type: "STRING" },
+                        correct_answer: { type: "STRING" },
+                        options: { type: "ARRAY", items: { type: "STRING" } }
+                    },
+                    required: ["clue", "correct_answer", "options"]
+                };
+
+                // Prompt para la IA
+                const prompt = `Genera una pista concisa (máximo 50 palabras) sobre un autor o una obra clave de la literatura peruana, apta para niños. La pista debe ser un dato interesante o una característica distintiva. Luego, proporciona el nombre del autor/obra como 'correct_answer' y 3-4 nombres de autores/obras como 'options' (incluyendo la respuesta correcta y distractores plausibles, que sean también autores u obras peruanas). Asegúrate de que la 'correct_answer' sea uno de los elementos en 'options'. Devuelve la respuesta únicamente en formato JSON con las propiedades 'clue', 'correct_answer' y 'options'.`;
+
+                const jsonResponse = await callGeminiAPI(prompt, true, schema);
+                currentWhoAmIGameData = JSON.parse(jsonResponse);
+
+                if (!currentWhoAmIGameData || !currentWhoAmIGameData.clue) {
+                    throw new Error("No se pudo generar el acertijo para el juego.");
+                }
+
+                clueContainer.innerHTML = `<p id="game-clue">${currentWhoAmIGameData.clue.replace(/\n/g, '<br>')}</p>`;
+                
+                const optionsHtml = shuffleArray([...currentWhoAmIGameData.options]).map(option => `
+                    <button class="game-option-button" onclick="checkWhoAmIAnswer(this, '${btoa(option)}', '${btoa(currentWhoAmIGameData.correct_answer)}')">
+                        ${option}
+                    </button>
+                `).join('');
+                optionsContainer.innerHTML = optionsHtml;
+
+                generateBtn.classList.remove('hidden'); // Se mantiene visible para generar otra pista si se desea
+                generateBtn.textContent = '🔍 Generar Otra Pista'; // Cambiar texto del botón
+                
+            } catch (error) {
+                console.error("Error generando el juego 'Quién es Quién':", error);
+                clueContainer.innerHTML = `<p class="text-red-500 text-center">¡Lo siento! No pude generar un nuevo acertijo. Por favor, intenta de nuevo más tarde.</p>`;
+                generateBtn.classList.remove('hidden');
+                generateBtn.textContent = '🔍 Reintentar Pista';
+            }
+        }
+
+        function checkWhoAmIAnswer(button, selectedBase64, correctBase64) {
+            const feedbackDiv = document.getElementById('game-feedback');
+            const optionsContainer = document.getElementById('game-options-container');
+            const playAgainBtn = document.getElementById('play-again-who-am-i-btn');
+            const generateBtn = document.getElementById('generate-clue-btn');
+
+
+            // Deshabilitar todos los botones de opción
+            Array.from(optionsContainer.getElementsByTagName('button')).forEach(btn => {
+                btn.disabled = true;
+                // Resaltar la respuesta correcta
+                if (btoa(btn.textContent) === correctBase64) {
+                    btn.classList.add('correct');
+                }
+            });
+
+            if (selectedBase64 === correctBase64) {
+                feedbackDiv.textContent = '¡Correcto! ¡Excelente trabajo! 🎉';
+                feedbackDiv.className = 'mt-6 text-center text-xl font-bold text-green-600';
+                button.classList.add('correct');
+            } else {
+                feedbackDiv.textContent = `Incorrecto. La respuesta correcta era "${atob(correctBase64)}". ¡Sigue aprendiendo! 😊`;
+                feedbackDiv.className = 'mt-6 text-center text-xl font-bold text-red-600';
+                button.classList.add('incorrect');
+            }
+            playAgainBtn.classList.remove('hidden'); // Mostrar el botón para un nuevo acertijo
+            generateBtn.classList.add('hidden'); // Ocultar el botón de generar pista una vez respondido
+        }
+
+        // --- GAME: Rompecabezas Literario ---
+        async function renderLiteraryPuzzleGame() {
+            const gameInfo = data["Rompecabezas Literario"];
+            contentContainer.innerHTML = `
+                <h2 class="text-3xl font-bold text-orange-600 mb-4">${gameInfo.title}</h2>
+                <p class="text-lg text-gray-700 mb-6">${gameInfo.description}</p>
+                
+                <div id="literary-puzzle-game-area">
+                    <div id="puzzle-clue-loading" class="text-center mt-8">
+                        <p>Generando rompecabezas... 🧠</p>
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mt-4"></div>
+                    </div>
+                    <div id="puzzle-clue" class="hidden">
+                        <!-- Aquí se mostrará la pista generada por la IA -->
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 mt-6">
+                        <div class="p-4 bg-white rounded-lg shadow">
+                            <h3 class="font-bold text-lg mb-2 text-gray-800">Autor:</h3>
+                            <div id="author-options" class="space-y-2"></div>
+                        </div>
+                        <div class="p-4 bg-white rounded-lg shadow">
+                            <h3 class="font-bold text-lg mb-2 text-gray-800">Obra:</h3>
+                            <div id="work-options" class="space-y-2"></div>
+                        </div>
+                        <div class="p-4 bg-white rounded-lg shadow">
+                            <h3 class="font-bold text-lg mb-2 text-gray-800">Corriente:</h3>
+                            <div id="current-options" class="space-y-2"></div>
+                        </div>
+                    </div>
+
+                    <div id="puzzle-feedback" class="mt-6 text-center text-xl font-bold"></div>
+
+                    <div class="mt-8 text-center">
+                        <button id="check-puzzle-btn" onclick="checkLiteraryPuzzleAnswers()" class="btn-primary font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-transform hidden">
+                            ✅ Comprobar
+                        </button>
+                        <button id="new-puzzle-btn" onclick="renderLiteraryPuzzleGame()" class="btn-secondary font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-transform ml-4 hidden">
+                            🔄 Nuevo Rompecabezas
+                        </button>
+                    </div>
+                </div>
+            `;
+            // Resetear el estado del juego al cargar la pestaña
+            selectedAuthor = null;
+            selectedWork = null;
+            selectedCurrent = null;
+            currentPuzzleData = null;
+            generateAndRenderLiteraryPuzzle();
+        }
+
+        async function generateAndRenderLiteraryPuzzle() {
+            const puzzleClueLoadingDiv = document.getElementById('puzzle-clue-loading');
+            const puzzleClueDiv = document.getElementById('puzzle-clue');
+            const authorOptionsDiv = document.getElementById('author-options');
+            const workOptionsDiv = document.getElementById('work-options');
+            const currentOptionsDiv = document.getElementById('current-options');
+            const checkBtn = document.getElementById('check-puzzle-btn');
+            const newPuzzleBtn = document.getElementById('new-puzzle-btn');
+            const puzzleFeedbackDiv = document.getElementById('puzzle-feedback');
+
+            // Resetear estado visual
+            puzzleClueDiv.innerHTML = '';
+            authorOptionsDiv.innerHTML = '';
+            workOptionsDiv.innerHTML = '';
+            currentOptionsDiv.innerHTML = '';
+            puzzleFeedbackDiv.textContent = '';
+            checkBtn.classList.add('hidden');
+            newPuzzleBtn.classList.add('hidden');
+            puzzleClueLoadingDiv.classList.remove('hidden'); // Show loading
+
+            // Reset selected options
+            selectedAuthor = null;
+            selectedWork = null;
+            selectedCurrent = null;
+
+            try {
+                // 1. Generar datos del rompecabezas (autor, obra, corriente, y una pista textual)
+                const puzzleSchema = {
+                    type: "OBJECT",
+                    properties: {
+                        clue: { type: "STRING" }, // Nueva propiedad para la pista textual
+                        correct_author: { type: "STRING" },
+                        correct_work: { type: "STRING" },
+                        correct_current: { type: "STRING" },
+                        author_options: { type: "ARRAY", items: { type: "STRING" } },
+                        work_options: { type: "ARRAY", items: { type: "STRING" } },
+                        current_options: { type: "ARRAY", items: { type: "STRING" } }
+                    },
+                    required: ["clue", "correct_author", "correct_work", "correct_current", "author_options", "work_options", "current_options"]
+                };
+                // MODIFIED PROMPT to ensure variety
+                const puzzlePrompt = `Genera un rompecabezas literario para niños. Selecciona un autor, una obra y una corriente literaria de la literatura peruana. Asegúrate de que la selección sea variada, abarcando diferentes periodos literarios y autores importantes, no solo dos. Incluye:
+                - Una 'clue' (pista textual, máximo 80 palabras) sobre el autor, la obra o una característica distintiva de su corriente.
+                - Un 'correct_author' (nombre completo del autor).
+                - Una 'correct_work' (nombre de una obra clave de ese autor).
+                - Una 'correct_current' (corriente literaria a la que pertenece).
+                - 'author_options': Un array de 3-4 nombres de autores (incluyendo el correcto y distractores plausibles de distintos periodos).
+                - 'work_options': Un array de 3-4 nombres de obras (incluyendo la correcta y distractores plausibles).
+                - 'current_options': Un array de 3-4 nombres de corrientes literarias (incluyendo la correcta y distractores plausibles de distintos periodos).
+                La respuesta debe ser en formato JSON.`;
+
+                const jsonPuzzleData = await callGeminiAPI(puzzlePrompt, true, puzzleSchema);
+                currentPuzzleData = JSON.parse(jsonPuzzleData);
+
+                if (!currentPuzzleData || !currentPuzzleData.clue) {
+                    throw new Error("La IA no pudo generar los datos del rompecabezas.");
+                }
+
+                puzzleClueLoadingDiv.classList.add('hidden'); // Hide loading
+                puzzleClueDiv.classList.remove('hidden'); // Show clue div
+                puzzleClueDiv.innerHTML = `<p id="puzzle-clue-text">${currentPuzzleData.clue.replace(/\n/g, '<br>')}</p>`;
+                
+                // 2. Renderizar las opciones
+                renderPuzzleOptions('author', currentPuzzleData.author_options, authorOptionsDiv);
+                renderPuzzleOptions('work', currentPuzzleData.work_options, workOptionsDiv);
+                renderPuzzleOptions('current', currentPuzzleData.current_options, currentOptionsDiv);
+
+                checkBtn.classList.remove('hidden'); // Show check button
+            } catch (error) {
+                console.error("Error al generar el rompecabezas literario:", error);
+                puzzleClueLoadingDiv.innerHTML = `<p class="text-red-500 text-center">¡Ups! No pude generar el rompecabezas. Intenta de nuevo. 😔</p>`;
+                puzzleClueLoadingDiv.classList.remove('hidden'); // Ensure loading is visible with error
+                newPuzzleBtn.classList.remove('hidden'); // Allow retry
+            }
+        }
+
+        function renderPuzzleOptions(type, optionsArray, containerDiv) {
+            containerDiv.innerHTML = ''; // Clear previous options
+            shuffleArray(optionsArray).forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.className = 'puzzle-piece-button w-full';
+                button.onclick = () => selectPuzzlePiece(type, option, button);
+                containerDiv.appendChild(button);
+            });
+        }
+
+        function selectPuzzlePiece(type, value, buttonElement) {
+            // Desmarcar cualquier opción previamente seleccionada para este tipo
+            document.querySelectorAll(`#${type}-options .puzzle-piece-button`).forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            // Marcar la opción actual
+            buttonElement.classList.add('selected');
+
+            // Almacenar la selección
+            if (type === 'author') {
+                selectedAuthor = value;
+            } else if (type === 'work') {
+                selectedWork = value;
+            } else if (type === 'current') {
+                selectedCurrent = value;
+            }
+        }
+
+        function checkLiteraryPuzzleAnswers() {
+            const puzzleFeedbackDiv = document.getElementById('puzzle-feedback');
+            const checkBtn = document.getElementById('check-puzzle-btn');
+            const newPuzzleBtn = document.getElementById('new-puzzle-btn');
+
+            let allCorrect = true;
+
+            // Verificar autor
+            const authorButtons = document.querySelectorAll('#author-options .puzzle-piece-button');
+            let authorCorrect = (selectedAuthor === currentPuzzleData.correct_author);
+            authorButtons.forEach(btn => {
+                btn.disabled = true;
+                if (btn.textContent === currentPuzzleData.correct_author) {
+                    btn.classList.add('correct-feedback');
+                } else if (btn.classList.contains('selected')) {
+                    btn.classList.add('incorrect-feedback');
+                }
+            });
+            if (!authorCorrect) allCorrect = false;
+
+            // Verificar obra
+            const workButtons = document.querySelectorAll('#work-options .puzzle-piece-button');
+            let workCorrect = (selectedWork === currentPuzzleData.correct_work);
+            workButtons.forEach(btn => {
+                btn.disabled = true;
+                if (btn.textContent === currentPuzzleData.correct_work) {
+                    btn.classList.add('correct-feedback');
+                } else if (btn.classList.contains('selected')) {
+                    btn.classList.add('incorrect-feedback');
+                }
+            });
+            if (!workCorrect) allCorrect = false;
+
+            // Verificar corriente
+            const currentButtons = document.querySelectorAll('#current-options .puzzle-piece-button');
+            let currentCorrect = (selectedCurrent === currentPuzzleData.correct_current);
+            currentButtons.forEach(btn => {
+                btn.disabled = true;
+                if (btn.textContent === currentPuzzleData.correct_current) {
+                    btn.classList.add('correct-feedback');
+                } else if (btn.classList.contains('selected')) {
+                    btn.classList.add('incorrect-feedback');
+                }
+            });
+            if (!currentCorrect) allCorrect = false;
+
+            checkBtn.classList.add('hidden'); // Hide check button after checking
+            newPuzzleBtn.classList.remove('hidden'); // Show new puzzle button
+
+            if (allCorrect) {
+                puzzleFeedbackDiv.textContent = '¡Felicidades! ¡Rompecabezas completo! 🎉';
+                puzzleFeedbackDiv.className = 'mt-6 text-center text-xl font-bold text-green-600';
+                // No hay imagen que revelar, el éxito es el texto
+            } else {
+                puzzleFeedbackDiv.textContent = '¡Sigue intentándolo! Revisa tus selecciones. 🤔';
+                puzzleFeedbackDiv.className = 'mt-6 text-center text-xl font-bold text-red-600';
+            }
+        }
+
+        // Función auxiliar para mezclar un array (Fisher-Yates shuffle)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Initial render
+        render();
+    </script>
+</body>
+</html>
+�
