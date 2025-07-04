@@ -292,8 +292,8 @@
         const closeModalBtn = document.getElementById('close-modal');
 
         let activeTab = Object.keys(data)[0];
-        let currentWhoAmIGameData = null; // Para almacenar los datos del juego actual "Quién es Quién"
-        let currentPuzzleData = null; // Para el juego Rompecabezas Literario
+        let currentWhoAmIGameData = { score: 0 }; // Initialize score for Who Am I
+        let currentPuzzleData = { score: 0 }; // Initialize score for Literary Puzzle
 
         // Variables para el estado del Rompecabezas Literario
         let selectedAuthor = null;
@@ -365,7 +365,7 @@
             
             html += `</div><div class="mt-8 pt-6 border-t-2 border-dashed border-gray-300 flex flex-col sm:flex-row justify-center gap-4">`;
             if (content.tieneJuego) {
-                 html += `<button onclick="openGameModal()" class="btn-primary font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-transform">� ¡A Jugar con IA! 🎮</button>`;
+                 html += `<button onclick="openGameModal()" class="btn-primary font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-transform">🎮 ¡A Jugar con IA! 🎮</button>`;
             }
             html += `<button onclick="openAIModal()" class="btn-secondary font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-transform">🤖 Pregúntale a la IA 🤖</button>`;
             // --- Nuevo botón para generar pieza creativa ---
@@ -505,20 +505,21 @@
             if (selectedBase64 === correctBase64) {
                 resultDiv.textContent = '¡Correcto! ¡Excelente trabajo! 🎉';
                 resultDiv.className = 'mt-4 font-bold text-center text-green-600';
-                button.classList.remove('bg-gray-100', 'hover:bg-yellow-200');
-                button.classList.add('bg-green-200', 'border-2', 'border-green-500');
+                button.classList.add('correct');
+                currentWhoAmIGameData.score += 4; // Add points for correct answer
             } else {
-                resultDiv.textContent = `Casi... La respuesta correcta está marcada en verde. ¡Sigue aprendiendo! 😊`;
+                resultDiv.textContent = `Casi... La respuesta correcta era "${atob(correctBase64)}". ¡Sigue aprendiendo! 😊`;
                 resultDiv.className = 'mt-4 font-bold text-center text-red-600';
-                button.classList.remove('bg-gray-100', 'hover:bg-yellow-200');
-                button.classList.add('bg-red-200', 'border-2', 'border-red-500');
+                button.classList.add('incorrect');
+                currentWhoAmIGameData.score -= 1.51; // Subtract points for incorrect answer
             }
+            document.getElementById('who-am-i-score').textContent = currentWhoAmIGameData.score.toFixed(2); // Update score display
             playAgainBtn.classList.remove('hidden');
         }
 
         // --- CORE AI CALLS ---
         async function callGeminiAPI(prompt, useJson = false, schema = null) {
-            const apiKey = "AIzaSyDJnxdmaG66UQjjMa4bB_ZoV6etCeQse8s"; // Provided by the environment
+            const apiKey = ""; // Provided by the environment
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
             
             const payload = {
@@ -621,10 +622,12 @@
         // --- GAME: Quién es Quién ---
         async function renderWhoAmIGame() {
             const gameInfo = data["Quién es Quién"];
+            currentWhoAmIGameData.score = 0; // Reset score for new game
             contentContainer.innerHTML = `
                 <h2 class="text-3xl font-bold text-orange-600 mb-4">${gameInfo.title}</h2>
                 <p class="text-lg text-gray-700 mb-6">${gameInfo.description}</p>
                 <div id="who-am-i-game-area">
+                    <div class="text-right text-xl font-bold text-gray-700 mb-4">Puntaje: <span id="who-am-i-score">0.00</span></div>
                     <div id="game-clue-container" class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200 text-lg font-semibold text-blue-800 min-h-[100px] flex items-center justify-center text-center">
                         <p id="game-clue">Pulsa "Generar Pista" para empezar.</p>
                     </div>
@@ -644,7 +647,9 @@
                     </div>
                 </div>
             `;
-            currentWhoAmIGameData = null; // Limpiar datos del juego anterior al renderizar la pestaña
+            // Update score display immediately after rendering
+            document.getElementById('who-am-i-score').textContent = currentWhoAmIGameData.score.toFixed(2);
+            currentWhoAmIGameData.data = null; // Clear previous game data
         }
 
         async function generateAndRenderWhoAmIClue() {
@@ -677,16 +682,16 @@
                 const prompt = `Genera una pista concisa (máximo 50 palabras) sobre un autor o una obra clave de la literatura peruana, apta para niños. La pista debe ser un dato interesante o una característica distintiva. Luego, proporciona el nombre del autor/obra como 'correct_answer' y 3-4 nombres de autores/obras como 'options' (incluyendo la respuesta correcta y distractores plausibles, que sean también autores u obras peruanas). Asegúrate de que la 'correct_answer' sea uno de los elementos en 'options'. Devuelve la respuesta únicamente en formato JSON con las propiedades 'clue', 'correct_answer' y 'options'.`;
 
                 const jsonResponse = await callGeminiAPI(prompt, true, schema);
-                currentWhoAmIGameData = JSON.parse(jsonResponse);
+                currentWhoAmIGameData.data = JSON.parse(jsonResponse); // Store game data
 
-                if (!currentWhoAmIGameData || !currentWhoAmIGameData.clue) {
+                if (!currentWhoAmIGameData.data || !currentWhoAmIGameData.data.clue) {
                     throw new Error("No se pudo generar el acertijo para el juego.");
                 }
 
-                clueContainer.innerHTML = `<p id="game-clue">${currentWhoAmIGameData.clue.replace(/\n/g, '<br>')}</p>`;
+                clueContainer.innerHTML = `<p id="game-clue">${currentWhoAmIGameData.data.clue.replace(/\n/g, '<br>')}</p>`;
                 
-                const optionsHtml = shuffleArray([...currentWhoAmIGameData.options]).map(option => `
-                    <button class="game-option-button" onclick="checkWhoAmIAnswer(this, '${btoa(option)}', '${btoa(currentWhoAmIGameData.correct_answer)}')">
+                const optionsHtml = shuffleArray([...currentWhoAmIGameData.data.options]).map(option => `
+                    <button class="game-option-button" onclick="checkWhoAmIAnswer(this, '${btoa(option)}', '${btoa(currentWhoAmIGameData.data.correct_answer)}')">
                         ${option}
                     </button>
                 `).join('');
@@ -704,42 +709,47 @@
         }
 
         function checkWhoAmIAnswer(button, selectedBase64, correctBase64) {
-            const feedbackDiv = document.getElementById('game-feedback');
+            const resultDiv = document.getElementById('game-feedback');
             const optionsContainer = document.getElementById('game-options-container');
             const playAgainBtn = document.getElementById('play-again-who-am-i-btn');
             const generateBtn = document.getElementById('generate-clue-btn');
+            const scoreDisplay = document.getElementById('who-am-i-score');
 
 
             // Deshabilitar todos los botones de opción
             Array.from(optionsContainer.getElementsByTagName('button')).forEach(btn => {
                 btn.disabled = true;
-                // Resaltar la respuesta correcta
+                // Highlight correct answer
                 if (btoa(btn.textContent) === correctBase64) {
                     btn.classList.add('correct');
                 }
             });
 
             if (selectedBase64 === correctBase64) {
-                feedbackDiv.textContent = '¡Correcto! ¡Excelente trabajo! 🎉';
-                feedbackDiv.className = 'mt-6 text-center text-xl font-bold text-green-600';
+                resultDiv.textContent = '¡Correcto! ¡Excelente trabajo! �';
+                resultDiv.className = 'mt-6 text-center text-xl font-bold text-green-600';
                 button.classList.add('correct');
+                currentWhoAmIGameData.score += 4; // Add points for correct answer
             } else {
-                feedbackDiv.textContent = `Incorrecto. La respuesta correcta era "${atob(correctBase64)}". ¡Sigue aprendiendo! 😊`;
-                feedbackDiv.className = 'mt-6 text-center text-xl font-bold text-red-600';
+                resultDiv.textContent = `Casi... La respuesta correcta era "${atob(correctBase64)}". ¡Sigue aprendiendo! 😊`;
+                resultDiv.className = 'mt-6 text-center text-xl font-bold text-red-600';
                 button.classList.add('incorrect');
+                currentWhoAmIGameData.score -= 1.51; // Subtract points for incorrect answer
             }
-            playAgainBtn.classList.remove('hidden'); // Mostrar el botón para un nuevo acertijo
-            generateBtn.classList.add('hidden'); // Ocultar el botón de generar pista una vez respondido
+            scoreDisplay.textContent = currentWhoAmIGameData.score.toFixed(2); // Update score display
+            playAgainBtn.classList.remove('hidden');
         }
 
         // --- GAME: Rompecabezas Literario ---
         async function renderLiteraryPuzzleGame() {
             const gameInfo = data["Rompecabezas Literario"];
+            currentPuzzleData.score = 0; // Reset score for new game
             contentContainer.innerHTML = `
                 <h2 class="text-3xl font-bold text-orange-600 mb-4">${gameInfo.title}</h2>
                 <p class="text-lg text-gray-700 mb-6">${gameInfo.description}</p>
                 
                 <div id="literary-puzzle-game-area">
+                    <div class="text-right text-xl font-bold text-gray-700 mb-4">Puntaje: <span id="puzzle-score">0.00</span></div>
                     <div id="puzzle-clue-loading" class="text-center mt-8">
                         <p>Generando rompecabezas... 🧠</p>
                         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mt-4"></div>
@@ -775,11 +785,13 @@
                     </div>
                 </div>
             `;
+            // Update score display immediately after rendering
+            document.getElementById('puzzle-score').textContent = currentPuzzleData.score.toFixed(2);
             // Resetear el estado del juego al cargar la pestaña
             selectedAuthor = null;
             selectedWork = null;
             selectedCurrent = null;
-            currentPuzzleData = null;
+            currentPuzzleData.data = null; // Clear previous game data
             generateAndRenderLiteraryPuzzle();
         }
 
@@ -835,20 +847,20 @@
                 La respuesta debe ser en formato JSON.`;
 
                 const jsonPuzzleData = await callGeminiAPI(puzzlePrompt, true, puzzleSchema);
-                currentPuzzleData = JSON.parse(jsonPuzzleData);
+                currentPuzzleData.data = JSON.parse(jsonPuzzleData); // Store game data
 
-                if (!currentPuzzleData || !currentPuzzleData.clue) {
+                if (!currentPuzzleData.data || !currentPuzzleData.data.clue) {
                     throw new Error("La IA no pudo generar los datos del rompecabezas.");
                 }
 
                 puzzleClueLoadingDiv.classList.add('hidden'); // Hide loading
                 puzzleClueDiv.classList.remove('hidden'); // Show clue div
-                puzzleClueDiv.innerHTML = `<p id="puzzle-clue-text">${currentPuzzleData.clue.replace(/\n/g, '<br>')}</p>`;
+                puzzleClueDiv.innerHTML = `<p id="puzzle-clue-text">${currentPuzzleData.data.clue.replace(/\n/g, '<br>')}</p>`;
                 
                 // 2. Renderizar las opciones
-                renderPuzzleOptions('author', currentPuzzleData.author_options, authorOptionsDiv);
-                renderPuzzleOptions('work', currentPuzzleData.work_options, workOptionsDiv);
-                renderPuzzleOptions('current', currentPuzzleData.current_options, currentOptionsDiv);
+                renderPuzzleOptions('author', currentPuzzleData.data.author_options, authorOptionsDiv);
+                renderPuzzleOptions('work', currentPuzzleData.data.work_options, workOptionsDiv);
+                renderPuzzleOptions('current', currentPuzzleData.data.current_options, currentOptionsDiv);
 
                 checkBtn.classList.remove('hidden'); // Show check button
             } catch (error) {
@@ -892,15 +904,16 @@
             const puzzleFeedbackDiv = document.getElementById('puzzle-feedback');
             const checkBtn = document.getElementById('check-puzzle-btn');
             const newPuzzleBtn = document.getElementById('new-puzzle-btn');
+            const scoreDisplay = document.getElementById('puzzle-score');
 
             let allCorrect = true;
 
             // Verificar autor
             const authorButtons = document.querySelectorAll('#author-options .puzzle-piece-button');
-            let authorCorrect = (selectedAuthor === currentPuzzleData.correct_author);
+            let authorCorrect = (selectedAuthor === currentPuzzleData.data.correct_author);
             authorButtons.forEach(btn => {
                 btn.disabled = true;
-                if (btn.textContent === currentPuzzleData.correct_author) {
+                if (btn.textContent === currentPuzzleData.data.correct_author) {
                     btn.classList.add('correct-feedback');
                 } else if (btn.classList.contains('selected')) {
                     btn.classList.add('incorrect-feedback');
@@ -910,10 +923,10 @@
 
             // Verificar obra
             const workButtons = document.querySelectorAll('#work-options .puzzle-piece-button');
-            let workCorrect = (selectedWork === currentPuzzleData.correct_work);
+            let workCorrect = (selectedWork === currentPuzzleData.data.correct_work);
             workButtons.forEach(btn => {
                 btn.disabled = true;
-                if (btn.textContent === currentPuzzleData.correct_work) {
+                if (btn.textContent === currentPuzzleData.data.correct_work) {
                     btn.classList.add('correct-feedback');
                 } else if (btn.classList.contains('selected')) {
                     btn.classList.add('incorrect-feedback');
@@ -923,10 +936,10 @@
 
             // Verificar corriente
             const currentButtons = document.querySelectorAll('#current-options .puzzle-piece-button');
-            let currentCorrect = (selectedCurrent === currentPuzzleData.correct_current);
+            let currentCorrect = (selectedCurrent === currentPuzzleData.data.correct_current);
             currentButtons.forEach(btn => {
                 btn.disabled = true;
-                if (btn.textContent === currentPuzzleData.correct_current) {
+                if (btn.textContent === currentPuzzleData.data.correct_current) {
                     btn.classList.add('correct-feedback');
                 } else if (btn.classList.contains('selected')) {
                     btn.classList.add('incorrect-feedback');
@@ -940,11 +953,13 @@
             if (allCorrect) {
                 puzzleFeedbackDiv.textContent = '¡Felicidades! ¡Rompecabezas completo! 🎉';
                 puzzleFeedbackDiv.className = 'mt-6 text-center text-xl font-bold text-green-600';
-                // No hay imagen que revelar, el éxito es el texto
+                currentPuzzleData.score += 4; // Add points for correct answer
             } else {
                 puzzleFeedbackDiv.textContent = '¡Sigue intentándolo! Revisa tus selecciones. 🤔';
                 puzzleFeedbackDiv.className = 'mt-6 text-center text-xl font-bold text-red-600';
+                currentPuzzleData.score -= 1.51; // Subtract points for incorrect answer
             }
+            scoreDisplay.textContent = currentPuzzleData.score.toFixed(2); // Update score display
         }
 
         // Función auxiliar para mezclar un array (Fisher-Yates shuffle)
@@ -961,4 +976,3 @@
     </script>
 </body>
 </html>
-�
