@@ -95,12 +95,11 @@
     </style>
 </head>
 <body class="p-4 md:p-8">
-    <p>Beta 1.2</p>
 
     <div class="max-w-7xl mx-auto">
         <header class="text-center mb-8">
             <h1 class="text-4xl md:text-5xl font-bold text-indigo-800">Explorando la Historia del Perú</h1>
-            <p class="text-lg text-gray-600 mt-2">Aprende sobre los presidentes</p>
+            <p class="text-lg text-gray-600 mt-2">Aprende sobre los presidentes.</p>
         </header>
 
         <!-- World Selection -->
@@ -124,7 +123,9 @@
 
         <!-- Main App View (hidden by default) -->
         <main id="main-app" class="hidden">
-             <button id="back-to-worlds" class="game-button back-button mb-6 w-full md:w-auto">← Volver a los Mundos</button>
+            <div class="flex justify-between items-center mb-6">
+                 <button id="back-to-worlds" class="game-button back-button w-auto">← Volver a los Mundos</button>
+            </div>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div class="lg:col-span-1">
                     <div class="card p-6">
@@ -138,7 +139,7 @@
                         <div id="president-info" class="mt-4 text-gray-700 space-y-4"></div>
                     </div>
                     <div id="games-section" class="card p-8 mt-8">
-                        <h2 class="text-3xl font-bold text-gray-800 mb-6">¡A Jugar!</h2>
+                        <h2 class="text-3xl font-bold text-gray-800 mb-6">¡A Jugar! <spam style="float: right;">Puntaje: <span id="score-display" class="text-indigo-600">0.00</span></spam> </h2>
                         <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
                             <button id="game1-btn" class="game-button">Adivina el Presidente ✨</button>
                             <button id="game2-btn" class="game-button">Ordena la Línea de Tiempo</button>
@@ -210,6 +211,7 @@
         ];
         
         let currentWorldPresidents = [];
+        let score = 0;
 
         const worldSelectionView = document.getElementById('world-selection');
         const mainAppView = document.getElementById('main-app');
@@ -222,6 +224,7 @@
         const feedbackTitle = document.getElementById('feedback-title');
         const feedbackContent = document.getElementById('feedback-content');
         const closeModalBtn = document.getElementById('close-modal-btn');
+        const scoreDisplay = document.getElementById('score-display');
 
         // --- Gemini API Helper ---
         const callGeminiAPI = async (prompt) => {
@@ -256,10 +259,16 @@
             }
         };
 
+        function updateScore(points) {
+            score += points;
+            scoreDisplay.textContent = score.toFixed(2);
+        }
 
         function showWorlds() {
             worldSelectionView.style.display = 'block';
             mainAppView.style.display = 'none';
+            score = 0; // Reset score when going back to world selection
+            updateScore(0);
         }
 
         function showWorld(worldId) {
@@ -275,7 +284,6 @@
                 button.classList.add('president-button');
                 button.textContent = p.name;
                 button.dataset.id = p.id;
-                // FIX: Use onclick for consistent event handling
                 button.onclick = () => showPresidentInfo(p.id);
                 presidentList.appendChild(button);
             });
@@ -343,14 +351,11 @@
             feedbackContent.innerHTML = `<p>${content}</p>`;
             feedbackModal.style.display = 'flex';
         }
-
-        // FIX: Enhanced endGame function to restore president button event listeners
+        
         function endGame() {
             gameContainer.innerHTML = '';
-            // Restore original functionality to president buttons
             document.querySelectorAll('#president-list .president-button').forEach(btn => {
                 const presidentId = parseInt(btn.dataset.id);
-                // Re-assign the original click handler
                 btn.onclick = () => showPresidentInfo(presidentId);
             });
         }
@@ -373,7 +378,8 @@
                 </div>`;
             
             const randomPresident = gamePresidents[Math.floor(Math.random() * gamePresidents.length)];
-            const prompt = `Genera una pista creativa y educativa sobre el presidente del Perú ${randomPresident.name}, sin mencionar su nombre. La pista debe ser fácil de entender para un estudiante. Ejemplo: 'Durante mi gobierno se construyó el Estadio Nacional'.`;
+            // FIX: Improved prompt to avoid leaking the president's name.
+            const prompt = `Basado en la siguiente información de un presidente peruano: ${JSON.stringify(randomPresident)}, genera una pista creativa y educativa sobre él para un juego de adivinanzas. Es MUY IMPORTANTE que NO menciones su nombre (${randomPresident.name}) en la pista. La pista debe ser fácil de entender para un estudiante. Ejemplo: 'Durante mi gobierno se construyó el Estadio Nacional'. Responde únicamente con la pista.`;
             
             const clue = await callGeminiAPI(prompt);
 
@@ -385,10 +391,12 @@
                 document.querySelectorAll('.president-button').forEach(btn => {
                     btn.onclick = () => {
                         if (parseInt(btn.dataset.id) === randomPresident.id) {
-                            showFeedback('¡Correcto!', '¡Muy bien!', true);
+                            updateScore(4);
+                            showFeedback('¡Correcto!', '+4 Puntos', true);
                             startGame1(gamePresidents);
                         } else {
-                            showFeedback('Incorrecto', `La respuesta era ${randomPresident.name}.`, false);
+                            updateScore(-1.51);
+                            showFeedback('Incorrecto', `-1.51 Puntos. La respuesta era ${randomPresident.name}.`, false);
                         }
                     };
                 });
@@ -447,9 +455,11 @@
                 const isCorrect = droppedIds.length === correctOrder.length && droppedIds.every((id, index) => id === correctOrder[index]);
 
                 if (isCorrect) {
-                    showFeedback('¡Excelente!', 'El orden es correcto.', true);
+                    updateScore(4);
+                    showFeedback('¡Excelente!', '+4 Puntos. El orden es correcto.', true);
                 } else {
-                    showFeedback('Incorrecto', 'El orden no es correcto. ¡Inténtalo de nuevo!', false);
+                    updateScore(-1.51);
+                    showFeedback('Incorrecto', '-1.51 Puntos. ¡Inténtalo de nuevo!', false);
                 }
             });
         }
@@ -476,7 +486,6 @@
 
             if (responseText) {
                 try {
-                    // Limpiar el texto para que sea un JSON válido
                     const cleanedJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
                     const data = JSON.parse(cleanedJson);
                     
@@ -484,17 +493,18 @@
                     const optionsEl = document.getElementById('game3-options');
                     optionsEl.innerHTML = '';
 
-                    // Mezclar las opciones
                     data.options.sort(() => Math.random() - 0.5).forEach(option => {
                         const button = document.createElement('button');
                         button.textContent = option;
                         button.classList.add('p-4', 'rounded-lg', 'text-left', 'font-semibold', 'bg-white', 'shadow', 'hover:bg-gray-100', 'transition');
                         button.onclick = () => {
                             if (option === correctPresident.name) {
-                                showFeedback('¡Correcto!', '', true);
+                                updateScore(4);
+                                showFeedback('¡Correcto!', '+4 Puntos', true);
                                 startGame3(gamePresidents);
                             } else {
-                                showFeedback('Incorrecto', `La respuesta correcta era ${correctPresident.name}.`, false);
+                                updateScore(-1.51);
+                                showFeedback('Incorrecto', `-1.51 Puntos. La respuesta correcta era ${correctPresident.name}.`, false);
                             }
                         };
                         optionsEl.appendChild(button);
@@ -535,16 +545,20 @@
 
                     document.getElementById('game4-statement').textContent = data.statement;
 
-                    document.getElementById('true-btn').onclick = () => {
-                        if (data.isTrue) showFeedback('¡Correcto!', '', true);
-                        else showFeedback('Incorrecto', '', false);
+                    const handleAnswer = (isCorrect) => {
+                        if (isCorrect) {
+                            updateScore(4);
+                            showFeedback('¡Correcto!', '+4 Puntos', true);
+                        } else {
+                            updateScore(-1.51);
+                            showFeedback('Incorrecto', '-1.51 Puntos', false);
+                        }
                         startGame4(gamePresidents);
                     };
-                    document.getElementById('false-btn').onclick = () => {
-                        if (!data.isTrue) showFeedback('¡Correcto!', '', true);
-                        else showFeedback('Incorrecto', '', false);
-                        startGame4(gamePresidents);
-                    };
+
+                    document.getElementById('true-btn').onclick = () => handleAnswer(data.isTrue);
+                    document.getElementById('false-btn').onclick = () => handleAnswer(!data.isTrue);
+
                 } catch (e) {
                      console.error("Error al parsear JSON de la IA:", e, responseText);
                     gameContainer.innerHTML += '<p class="text-red-500">Error al procesar la afirmación de la IA.</p>';
@@ -598,14 +612,17 @@
                     gameContent.innerHTML = quizHtml;
 
                     document.getElementById('submit-quiz').addEventListener('click', () => {
-                        let score = 0;
+                        let correctAnswers = 0;
                         data.quiz.forEach((item, index) => {
                             const selectedOption = document.querySelector(`input[name="q${index}"]:checked`);
                             if (selectedOption && selectedOption.value === item.answer) {
-                                score++;
+                                correctAnswers++;
+                                updateScore(4);
+                            } else {
+                                updateScore(-1.51);
                             }
                         });
-                        showFeedback('Examen Calificado', `Obtuviste ${score} de ${data.quiz.length} respuestas correctas.`, true);
+                        showFeedback('Examen Calificado', `Obtuviste ${correctAnswers} de ${data.quiz.length} respuestas correctas.`, true);
                     });
 
                 } catch (e) {
