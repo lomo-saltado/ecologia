@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Calculadora</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#66a6ff"/>
+    <link rel="manifest" id="manifest">
+    
+    <!-- Apple PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Calculadora">
+    <link rel="apple-touch-icon" id="apple-icon">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Fondo degradado vibrante para que el efecto de cristal resalte */
+            background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+            /* Evita el rebote de scroll en iOS */
+            overscroll-behavior-y: contain;
+        }
+
+        /* Contenedor principal de la calculadora con efecto de cristal */
+        .glass-container {
+            background: rgba(255, 255, 255, 0.15);
+            -webkit-backdrop-filter: blur(12px); /* Para Safari */
+            backdrop-filter: blur(12px);
+            border-radius: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        /* Pantalla de la calculadora */
+        .glass-display {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0.75rem;
+            color: #ffffff;
+        }
+
+        /* Estilo base de los botones - AHORA CIRCULARES */
+        .btn-glass {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 9999px; /* Clave para hacerlos circulares/píldoras */
+            color: #ffffff;
+            font-weight: 500;
+            transition: all 0.2s ease-in-out;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Efecto al pasar el mouse/tocar sobre el botón */
+        .btn-glass:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05); /* Efecto de zoom ligero */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Efecto al hacer clic en el botón */
+        .btn-glass:active {
+            transform: scale(0.95);
+            box-shadow: none;
+        }
+
+        /* Colores especiales para botones de operadores */
+        .btn-operator {
+            background: rgba(0, 0, 0, 0.15);
+        }
+        .btn-clear {
+            background: rgba(255, 82, 82, 0.5); /* Rojo translúcido */
+        }
+        .btn-equals {
+            background: rgba(66, 135, 245, 0.6); /* Azul translúcido */
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-xs mx-auto glass-container p-5">
+        <!-- Pantalla de la calculadora -->
+        <div class="glass-display p-4 mb-5">
+            <input type="text" id="display" class="w-full h-16 bg-transparent text-right text-5xl font-bold border-0 focus:ring-0 p-0" readonly placeholder="0">
+        </div>
+
+        <!-- Botones de la calculadora -->
+        <div class="grid grid-cols-4 gap-3">
+            <!-- Fila 1 -->
+            <button onclick="clearDisplay()" class="btn-glass btn-clear text-2xl aspect-square">C</button>
+            <button onclick="appendCharacter('%')" class="btn-glass btn-operator text-2xl aspect-square">%</button>
+            <button onclick="appendCharacter('/')" class="btn-glass btn-operator text-2xl aspect-square">/</button>
+            <button onclick="appendCharacter('*')" class="btn-glass btn-operator text-2xl aspect-square">*</button>
+
+            <!-- Fila 2 -->
+            <button onclick="appendCharacter('7')" class="btn-glass text-2xl aspect-square">7</button>
+            <button onclick="appendCharacter('8')" class="btn-glass text-2xl aspect-square">8</button>
+            <button onclick="appendCharacter('9')" class="btn-glass text-2xl aspect-square">9</button>
+            <button onclick="appendCharacter('-')" class="btn-glass btn-operator text-2xl aspect-square">-</button>
+
+            <!-- Fila 3 -->
+            <button onclick="appendCharacter('4')" class="btn-glass text-2xl aspect-square">4</button>
+            <button onclick="appendCharacter('5')" class="btn-glass text-2xl aspect-square">5</button>
+            <button onclick="appendCharacter('6')" class="btn-glass text-2xl aspect-square">6</button>
+            <button onclick="appendCharacter('+')" class="btn-glass btn-operator text-2xl aspect-square">+</button>
+
+            <!-- Fila 4 -->
+            <button onclick="appendCharacter('1')" class="btn-glass text-2xl aspect-square">1</button>
+            <button onclick="appendCharacter('2')" class="btn-glass text-2xl aspect-square">2</button>
+            <button onclick="appendCharacter('3')" class="btn-glass text-2xl aspect-square">3</button>
+            <button onclick="calculateResult()" class="btn-glass btn-equals row-span-2 text-2xl">=</button>
+            
+            <!-- Fila 5 -->
+            <button onclick="appendCharacter('0')" class="btn-glass col-span-2 text-2xl">0</button>
+            <button onclick="appendCharacter('.')" class="btn-glass text-2xl aspect-square">.</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Lógica de la Calculadora ---
+        const display = document.getElementById('display');
+        let isResultDisplayed = false;
+        let lastResult = '';
+
+        function appendCharacter(char) {
+            const operators = ['%', '/', '*', '-', '+'];
+            if (isResultDisplayed) {
+                if (operators.includes(char)) {
+                    display.value = lastResult;
+                } else {
+                    display.value = '';
+                }
+                isResultDisplayed = false;
+            }
+            const lastChar = display.value.slice(-1);
+            if (operators.includes(char) && operators.includes(lastChar)) return;
+            if (operators.includes(char) && display.value === '' && char !== '-') return;
+            const currentNumber = display.value.split(/[%/*\-+]/).pop();
+            if (char === '.' && currentNumber.includes('.')) return;
+            display.value += char;
+        }
+
+        function clearDisplay() {
+            display.value = '';
+            isResultDisplayed = false;
+            lastResult = '';
+        }
+
+        function calculateResult() {
+            if (display.value === '' || isResultDisplayed) return;
+            try {
+                const expression = display.value;
+                const divisionRegex = /^(-?\d*\.?\d+)\/(-?\d*\.?\d+)$/;
+                const match = expression.match(divisionRegex);
+                if (match) {
+                    const dividend = parseFloat(match[1]);
+                    const divisor = parseFloat(match[2]);
+                    if (divisor === 0) {
+                        display.value = 'Error';
+                        isResultDisplayed = true;
+                        return;
+                    }
+                    const quotient = Math.floor(dividend / divisor);
+                    const remainder = dividend % divisor;
+                    display.value = `Q:${quotient} R:${remainder}`;
+                    lastResult = quotient.toString();
+                } else {
+                    const result = new Function('return ' + expression)();
+                    const resultString = Number.isInteger(result) ? result.toString() : parseFloat(result.toFixed(10)).toString();
+                    display.value = resultString;
+                    lastResult = resultString;
+                }
+                isResultDisplayed = true;
+            } catch (error) {
+                display.value = 'Error';
+                isResultDisplayed = true;
+            }
+        }
+
+        document.addEventListener('keydown', (event) => {
+            const key = event.key;
+            if ((key >= '0' && key <= '9') || key === '.') appendCharacter(key);
+            else if (['+', '-', '*', '/', '%'].includes(key)) appendCharacter(key);
+            else if (key === 'Enter' || key === '=') { event.preventDefault(); calculateResult(); }
+            else if (key === 'Backspace') {
+                if (isResultDisplayed) clearDisplay();
+                else display.value = display.value.slice(0, -1);
+            } else if (key.toLowerCase() === 'c' || key === 'Escape') clearDisplay();
+        });
+
+        // --- Lógica de la Web App (PWA) ---
+
+        // 1. Crear un icono SVG y convertirlo a Data URL para usarlo sin archivos externos.
+        const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-hash"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></svg>`;
+        const iconUrl = `data:image/svg+xml;base64,${btoa(svgIcon)}`;
+        document.getElementById('apple-icon').href = iconUrl;
+        
+        // 2. Crear el manifest.json dinámicamente
+        const manifest = {
+            "name": "Calculadora Glass",
+            "short_name": "Calculadora",
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#89f7fe",
+            "theme_color": "#66a6ff",
+            "description": "Una calculadora con diseño de cristal.",
+            "icons": [{
+                "src": iconUrl,
+                "sizes": "192x192",
+                "type": "image/svg+xml"
+            }]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+        const manifestUrl = URL.createObjectURL(manifestBlob);
+        document.getElementById('manifest').href = manifestUrl;
+
+        // 3. Registrar el Service Worker para funcionalidad offline
+        if ('serviceWorker' in navigator) {
+            const serviceWorkerCode = `
+                const CACHE_NAME = 'calculadora-cache-v1';
+                const urlsToCache = [
+                    '/',
+                    '/index.html' // Asumiendo que esta es la página principal
+                ];
+
+                self.addEventListener('install', event => {
+                    event.waitUntil(
+                        caches.open(CACHE_NAME)
+                            .then(cache => {
+                                // Cachear los recursos básicos. En este caso, la propia página.
+                                // Como es una app de una sola página, solo necesitamos cachear la raíz.
+                                return cache.add('/'); 
+                            })
+                    );
+                });
+
+                self.addEventListener('fetch', event => {
+                    event.respondWith(
+                        caches.match(event.request)
+                            .then(response => {
+                                // Si está en caché, lo devuelve. Si no, lo busca en la red.
+                                return response || fetch(event.request);
+                            })
+                    );
+                });
+            `;
+            const swBlob = new Blob([serviceWorkerCode], {type: 'application/javascript'});
+            const swUrl = URL.createObjectURL(swBlob);
+
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register(swUrl)
+                    .then(registration => console.log('ServiceWorker registrado con éxito:', registration.scope))
+                    .catch(error => console.log('Fallo en el registro de ServiceWorker:', error));
+            });
+        }
+    </script>
+</body>
+</html>
