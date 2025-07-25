@@ -2,262 +2,266 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Calculadora</title>
     
     <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#66a6ff"/>
+    <meta name="theme-color" content="#000000"/>
     <link rel="manifest" id="manifest">
     
     <!-- Apple PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="Calculadora">
     <link rel="apple-touch-icon" id="apple-icon">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --safe-area-inset-bottom: env(safe-area-inset-bottom, 1rem);
+        }
+        
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            /* Fondo degradado vibrante para que el efecto de cristal resalte */
-            background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
-            /* Evita el rebote de scroll en iOS */
-            overscroll-behavior-y: contain;
+            background: #000;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
         }
-
-        /* Contenedor principal de la calculadora con efecto de cristal */
-        .glass-container {
-            background: rgba(255, 255, 255, 0.15);
-            -webkit-backdrop-filter: blur(12px); /* Para Safari */
-            backdrop-filter: blur(12px);
-            border-radius: 1.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-        }
-
-        /* Pantalla de la calculadora */
-        .glass-display {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 0.75rem;
-            color: #ffffff;
-        }
-
-        /* Estilo base de los botones - AHORA CIRCULARES */
-        .btn-glass {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 9999px; /* Clave para hacerlos circulares/píldoras */
-            color: #ffffff;
+        
+        /* Estilo base de los botones */
+        .btn {
+            border-radius: 9999px;
+            font-size: 2rem;
             font-weight: 500;
-            transition: all 0.2s ease-in-out;
-            border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: background-color 0.1s ease-in-out;
+            -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
         }
 
-        /* Efecto al pasar el mouse/tocar sobre el botón */
-        .btn-glass:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(1.05); /* Efecto de zoom ligero */
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
+        /* Botones grises (números) */
+        .btn-dark-gray { background-color: #333333; }
+        .btn-dark-gray:active { background-color: #737373; }
+
+        /* Botones gris claro (operadores superiores) */
+        .btn-light-gray { background-color: #A5A5A5; color: #000; }
+        .btn-light-gray:active { background-color: #D9D9D9; }
         
-        /* Efecto al hacer clic en el botón */
-        .btn-glass:active {
-            transform: scale(0.95);
-            box-shadow: none;
+        /* Botones naranjas (operadores laterales) */
+        .btn-orange { background-color: #F1A33C; }
+        .btn-orange:active { background-color: #F8D5A1; }
+
+        /* Botón activo (para cuando un operador está seleccionado) */
+        .btn-orange.active {
+            background-color: #FFFFFF;
+            color: #F1A33C;
         }
 
-        /* Colores especiales para botones de operadores */
-        .btn-operator {
-            background: rgba(0, 0, 0, 0.15);
-        }
-        .btn-clear {
-            background: rgba(255, 82, 82, 0.5); /* Rojo translúcido */
-        }
-        .btn-equals {
-            background: rgba(66, 135, 245, 0.6); /* Azul translúcido */
-        }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
+<body class="p-4">
 
-    <div class="w-full max-w-xs mx-auto glass-container p-5">
+    <!-- Contenedor principal que ocupa toda la pantalla -->
+    <div class="flex flex-col h-full w-full">
         <!-- Pantalla de la calculadora -->
-        <div class="glass-display p-4 mb-5">
-            <input type="text" id="display" class="w-full h-16 bg-transparent text-right text-5xl font-bold border-0 focus:ring-0 p-0" readonly placeholder="0">
+        <div class="flex-grow flex items-end justify-end pb-4">
+            <input type="text" id="display" class="w-full bg-transparent text-right text-8xl font-light border-0 focus:ring-0 p-0" readonly value="0">
         </div>
 
         <!-- Botones de la calculadora -->
-        <div class="grid grid-cols-4 gap-3">
+        <div class="grid grid-cols-4 gap-3" style="padding-bottom: var(--safe-area-inset-bottom);">
             <!-- Fila 1 -->
-            <button onclick="clearDisplay()" class="btn-glass btn-clear text-2xl aspect-square">C</button>
-            <button onclick="appendCharacter('%')" class="btn-glass btn-operator text-2xl aspect-square">%</button>
-            <button onclick="appendCharacter('/')" class="btn-glass btn-operator text-2xl aspect-square">/</button>
-            <button onclick="appendCharacter('*')" class="btn-glass btn-operator text-2xl aspect-square">*</button>
+            <button id="clearBtn" onclick="clearDisplay()" class="btn btn-light-gray aspect-square">AC</button>
+            <button onclick="toggleSign()" class="btn btn-light-gray aspect-square">+/-</button>
+            <button onclick="handleOperator('%')" class="btn btn-light-gray aspect-square">%</button>
+            <button id="op-divide" onclick="handleOperator('/')" class="btn btn-orange aspect-square text-4xl">/</button>
 
             <!-- Fila 2 -->
-            <button onclick="appendCharacter('7')" class="btn-glass text-2xl aspect-square">7</button>
-            <button onclick="appendCharacter('8')" class="btn-glass text-2xl aspect-square">8</button>
-            <button onclick="appendCharacter('9')" class="btn-glass text-2xl aspect-square">9</button>
-            <button onclick="appendCharacter('-')" class="btn-glass btn-operator text-2xl aspect-square">-</button>
+            <button onclick="appendNumber('7')" class="btn btn-dark-gray aspect-square">7</button>
+            <button onclick="appendNumber('8')" class="btn btn-dark-gray aspect-square">8</button>
+            <button onclick="appendNumber('9')" class="btn btn-dark-gray aspect-square">9</button>
+            <button id="op-multiply" onclick="handleOperator('*')" class="btn btn-orange aspect-square text-4xl">×</button>
 
             <!-- Fila 3 -->
-            <button onclick="appendCharacter('4')" class="btn-glass text-2xl aspect-square">4</button>
-            <button onclick="appendCharacter('5')" class="btn-glass text-2xl aspect-square">5</button>
-            <button onclick="appendCharacter('6')" class="btn-glass text-2xl aspect-square">6</button>
-            <button onclick="appendCharacter('+')" class="btn-glass btn-operator text-2xl aspect-square">+</button>
+            <button onclick="appendNumber('4')" class="btn btn-dark-gray aspect-square">4</button>
+            <button onclick="appendNumber('5')" class="btn btn-dark-gray aspect-square">5</button>
+            <button onclick="appendNumber('6')" class="btn btn-dark-gray aspect-square">6</button>
+            <button id="op-subtract" onclick="handleOperator('-')" class="btn btn-orange aspect-square text-4xl">-</button>
 
             <!-- Fila 4 -->
-            <button onclick="appendCharacter('1')" class="btn-glass text-2xl aspect-square">1</button>
-            <button onclick="appendCharacter('2')" class="btn-glass text-2xl aspect-square">2</button>
-            <button onclick="appendCharacter('3')" class="btn-glass text-2xl aspect-square">3</button>
-            <button onclick="calculateResult()" class="btn-glass btn-equals row-span-2 text-2xl">=</button>
+            <button onclick="appendNumber('1')" class="btn btn-dark-gray aspect-square">1</button>
+            <button onclick="appendNumber('2')" class="btn btn-dark-gray aspect-square">2</button>
+            <button onclick="appendNumber('3')" class="btn btn-dark-gray aspect-square">3</button>
+            <button id="op-add" onclick="handleOperator('+')" class="btn btn-orange aspect-square text-4xl">+</button>
             
             <!-- Fila 5 -->
-            <button onclick="appendCharacter('0')" class="btn-glass col-span-2 text-2xl">0</button>
-            <button onclick="appendCharacter('.')" class="btn-glass text-2xl aspect-square">.</button>
+            <button onclick="appendNumber('0')" class="btn btn-dark-gray col-span-2 aspect-auto text-left pl-8">0</button>
+            <button onclick="appendNumber('.')" class="btn btn-dark-gray aspect-square">,</button>
+            <button onclick="calculateResult()" class="btn btn-orange aspect-square text-4xl">=</button>
         </div>
     </div>
 
     <script>
-        // --- Lógica de la Calculadora ---
         const display = document.getElementById('display');
-        let isResultDisplayed = false;
-        let lastResult = '';
+        const clearBtn = document.getElementById('clearBtn');
+        
+        let currentValue = '0';
+        let previousValue = null;
+        let operator = null;
+        let waitingForSecondValue = false;
 
-        function appendCharacter(char) {
-            const operators = ['%', '/', '*', '-', '+'];
-            if (isResultDisplayed) {
-                if (operators.includes(char)) {
-                    display.value = lastResult;
+        function updateDisplay() {
+            let valueToDisplay = currentValue.replace('.', ',');
+            const limit = 9;
+            if (valueToDisplay.length > limit) {
+                if (valueToDisplay.includes(',')) {
+                     valueToDisplay = parseFloat(currentValue).toPrecision(limit - Math.floor(parseFloat(currentValue)).toString().length);
                 } else {
-                    display.value = '';
+                     valueToDisplay = parseFloat(currentValue).toExponential(2);
                 }
-                isResultDisplayed = false;
             }
-            const lastChar = display.value.slice(-1);
-            if (operators.includes(char) && operators.includes(lastChar)) return;
-            if (operators.includes(char) && display.value === '' && char !== '-') return;
-            const currentNumber = display.value.split(/[%/*\-+]/).pop();
-            if (char === '.' && currentNumber.includes('.')) return;
-            display.value += char;
+            
+            display.value = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 8 }).format(valueToDisplay.replace(',', '.'));
+            
+            if (display.value.length > 9) {
+                display.classList.remove('text-8xl');
+                display.classList.add('text-6xl');
+            } else {
+                display.classList.remove('text-6xl');
+                display.classList.add('text-8xl');
+            }
+            
+            clearBtn.innerText = currentValue === '0' && !previousValue ? 'AC' : 'C';
         }
 
+        function appendNumber(number) {
+            if (waitingForSecondValue) {
+                currentValue = number;
+                waitingForSecondValue = false;
+            } else {
+                if (currentValue === '0' && number !== '.') {
+                    currentValue = number;
+                } else if (number === '.' && currentValue.includes('.')) {
+                    return;
+                } else {
+                    currentValue += number;
+                }
+            }
+            updateDisplay();
+            removeActiveOperator();
+        }
+        
         function clearDisplay() {
-            display.value = '';
-            isResultDisplayed = false;
-            lastResult = '';
+            currentValue = '0';
+            previousValue = null;
+            operator = null;
+            waitingForSecondValue = false;
+            updateDisplay();
+            removeActiveOperator();
+        }
+
+        function toggleSign() {
+            if (currentValue === '0') return;
+            currentValue = (parseFloat(currentValue) * -1).toString();
+            updateDisplay();
+        }
+
+        function handleOperator(nextOperator) {
+            const value = parseFloat(currentValue);
+
+            if (operator && waitingForSecondValue) {
+                operator = nextOperator;
+                setActiveOperator(nextOperator);
+                return;
+            }
+
+            if (previousValue === null) {
+                previousValue = value;
+            } else if (operator) {
+                const result = performCalculation();
+                currentValue = result.toString();
+                previousValue = result;
+                updateDisplay();
+            }
+
+            waitingForSecondValue = true;
+            operator = nextOperator;
+            setActiveOperator(nextOperator);
+        }
+
+        function performCalculation() {
+            if (operator === null || previousValue === null) return parseFloat(currentValue);
+            const current = parseFloat(currentValue);
+            let result = 0;
+            switch (operator) {
+                case '+': result = previousValue + current; break;
+                case '-': result = previousValue - current; break;
+                case '*': result = previousValue * current; break;
+                case '/': result = previousValue / current; break;
+                case '%': result = previousValue % current; break;
+                default: return current;
+            }
+            return result;
         }
 
         function calculateResult() {
-            if (display.value === '' || isResultDisplayed) return;
-            try {
-                const expression = display.value;
-                const divisionRegex = /^(-?\d*\.?\d+)\/(-?\d*\.?\d+)$/;
-                const match = expression.match(divisionRegex);
-                if (match) {
-                    const dividend = parseFloat(match[1]);
-                    const divisor = parseFloat(match[2]);
-                    if (divisor === 0) {
-                        display.value = 'Error';
-                        isResultDisplayed = true;
-                        return;
-                    }
-                    const quotient = Math.floor(dividend / divisor);
-                    const remainder = dividend % divisor;
-                    display.value = `Q:${quotient} R:${remainder}`;
-                    lastResult = quotient.toString();
-                } else {
-                    const result = new Function('return ' + expression)();
-                    const resultString = Number.isInteger(result) ? result.toString() : parseFloat(result.toFixed(10)).toString();
-                    display.value = resultString;
-                    lastResult = resultString;
-                }
-                isResultDisplayed = true;
-            } catch (error) {
-                display.value = 'Error';
-                isResultDisplayed = true;
-            }
+            if(operator === null) return;
+            const result = performCalculation();
+            currentValue = result.toString();
+            operator = null;
+            previousValue = null;
+            waitingForSecondValue = false;
+            updateDisplay();
+            removeActiveOperator();
+        }
+        
+        function setActiveOperator(op) {
+            removeActiveOperator();
+            let btnId;
+            if (op === '/') btnId = 'op-divide';
+            else if (op === '*') btnId = 'op-multiply';
+            else if (op === '-') btnId = 'op-subtract';
+            else if (op === '+') btnId = 'op-add';
+            
+            if(btnId) document.getElementById(btnId).classList.add('active');
         }
 
-        document.addEventListener('keydown', (event) => {
-            const key = event.key;
-            if ((key >= '0' && key <= '9') || key === '.') appendCharacter(key);
-            else if (['+', '-', '*', '/', '%'].includes(key)) appendCharacter(key);
-            else if (key === 'Enter' || key === '=') { event.preventDefault(); calculateResult(); }
-            else if (key === 'Backspace') {
-                if (isResultDisplayed) clearDisplay();
-                else display.value = display.value.slice(0, -1);
-            } else if (key.toLowerCase() === 'c' || key === 'Escape') clearDisplay();
-        });
+        function removeActiveOperator() {
+            document.querySelectorAll('.btn-orange.active').forEach(btn => btn.classList.remove('active'));
+        }
+
+        updateDisplay();
 
         // --- Lógica de la Web App (PWA) ---
-
-        // 1. Crear un icono SVG y convertirlo a Data URL para usarlo sin archivos externos.
-        const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-hash"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></svg>`;
+        const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 24 24" fill="#F1A33C"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><line x1="8" y1="12" x2="16" y2="12" stroke="white" stroke-width="2"></line></svg>`;
         const iconUrl = `data:image/svg+xml;base64,${btoa(svgIcon)}`;
         document.getElementById('apple-icon').href = iconUrl;
         
-        // 2. Crear el manifest.json dinámicamente
         const manifest = {
-            "name": "Calculadora Glass",
+            "name": "Calculadora",
             "short_name": "Calculadora",
             "start_url": ".",
-            "display": "standalone",
-            "background_color": "#89f7fe",
-            "theme_color": "#66a6ff",
-            "description": "Una calculadora con diseño de cristal.",
-            "icons": [{
-                "src": iconUrl,
-                "sizes": "192x192",
-                "type": "image/svg+xml"
-            }]
+            "display": "fullscreen",
+            "background_color": "#000000",
+            "theme_color": "#000000",
+            "description": "Calculadora estilo iOS.",
+            "icons": [{"src": iconUrl, "sizes": "192x192", "type": "image/svg+xml"}]
         };
         const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
         const manifestUrl = URL.createObjectURL(manifestBlob);
         document.getElementById('manifest').href = manifestUrl;
 
-        // 3. Registrar el Service Worker para funcionalidad offline
-        if ('serviceWorker' in navigator) {
-            const serviceWorkerCode = `
-                const CACHE_NAME = 'calculadora-cache-v1';
-                const urlsToCache = [
-                    '/',
-                    '/index.html' // Asumiendo que esta es la página principal
-                ];
-
-                self.addEventListener('install', event => {
-                    event.waitUntil(
-                        caches.open(CACHE_NAME)
-                            .then(cache => {
-                                // Cachear los recursos básicos. En este caso, la propia página.
-                                // Como es una app de una sola página, solo necesitamos cachear la raíz.
-                                return cache.add('/'); 
-                            })
-                    );
-                });
-
-                self.addEventListener('fetch', event => {
-                    event.respondWith(
-                        caches.match(event.request)
-                            .then(response => {
-                                // Si está en caché, lo devuelve. Si no, lo busca en la red.
-                                return response || fetch(event.request);
-                            })
-                    );
-                });
-            `;
-            const swBlob = new Blob([serviceWorkerCode], {type: 'application/javascript'});
-            const swUrl = URL.createObjectURL(swBlob);
-
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register(swUrl)
-                    .then(registration => console.log('ServiceWorker registrado con éxito:', registration.scope))
-                    .catch(error => console.log('Fallo en el registro de ServiceWorker:', error));
-            });
-        }
     </script>
 </body>
 </html>
+```
+
+He realizado algunos cambios. Eliminé el código del Service Worker que causaba el error de registro. La aplicación ahora debería funcionar sin ese err
